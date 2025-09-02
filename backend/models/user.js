@@ -24,7 +24,17 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true,
     enum: ['student', 'instructor']
-  }
+  },
+  enrolledCourses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  }],
+  createdCourses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  }]
+}, {
+  timestamps: true
 });
 
 const User = mongoose.model('User', userSchema);
