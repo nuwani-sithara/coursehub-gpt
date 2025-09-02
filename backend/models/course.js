@@ -19,10 +19,10 @@ const courseSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  students: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
+//   students: [{
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'User'
+//   }],
   category: {
     type: String,
     required: true

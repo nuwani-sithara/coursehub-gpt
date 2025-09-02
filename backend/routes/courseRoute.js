@@ -14,6 +14,6 @@ router.get('/course-student/:studentId', courseController.getCoursesByStudent);
 router.post('/create-course', authMiddleware, courseController.createCourse);
 router.put('/update-course/:id', authMiddleware, courseController.updateCourse);
 router.delete('/delete-course/:id', authMiddleware, courseController.deleteCourse);
-router.post('/enroll-course/:id', authMiddleware, courseController.enrollInCourse);
+// router.post('/enroll-course/:id', authMiddleware, courseController.enrollInCourse);
 
 module.exports = router;

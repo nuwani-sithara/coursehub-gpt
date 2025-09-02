@@ -1,4 +1,3 @@
-// controllers/courseController.js
 const Course = require('../models/course');
 const User = require('../models/user');
 
@@ -132,40 +131,40 @@ exports.deleteCourse = async (req, res) => {
 };
 
 // Enroll in a course (Student only)
-exports.enrollInCourse = async (req, res) => {
-  try {
-    // Check if user is a student
-    if (req.user.role !== 'student') {
-      return res.status(403).json({ message: 'Only students can enroll in courses' });
-    }
+// exports.enrollInCourse = async (req, res) => {
+//   try {
+//     // Check if user is a student
+//     if (req.user.role !== 'student') {
+//       return res.status(403).json({ message: 'Only students can enroll in courses' });
+//     }
 
-    const course = await Course.findById(req.params.id);
+//     const course = await Course.findById(req.params.id);
     
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
+//     if (!course) {
+//       return res.status(404).json({ message: 'Course not found' });
+//     }
 
-    // Check if already enrolled
-    if (course.students.includes(req.user.id)) {
-      return res.status(400).json({ message: 'Already enrolled in this course' });
-    }
+//     // Check if already enrolled
+//     if (course.students.includes(req.user.id)) {
+//       return res.status(400).json({ message: 'Already enrolled in this course' });
+//     }
 
-    // Add student to course
-    course.students.push(req.user.id);
-    await course.save();
+//     // Add student to course
+//     course.students.push(req.user.id);
+//     await course.save();
 
-    // Add course to student's enrolledCourses
-    await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { enrolledCourses: req.params.id } }
-    );
+//     // Add course to student's enrolledCourses
+//     await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $push: { enrolledCourses: req.params.id } }
+//     );
 
-    res.status(200).json({ message: 'Enrolled in course successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+//     res.status(200).json({ message: 'Enrolled in course successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
 
 // Get courses by instructor
 exports.getCoursesByInstructor = async (req, res) => {
