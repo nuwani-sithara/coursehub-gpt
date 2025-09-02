@@ -31,6 +31,9 @@ app.use('/auth', authRoutes);
 const courseRoutes = require('./routes/courseRoute.js');
 app.use('/courses', courseRoutes);
 
+const enrollmentRoutes = require('./routes/enrollmentRoute.js');
+app.use('/enrollments', enrollmentRoutes);
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
