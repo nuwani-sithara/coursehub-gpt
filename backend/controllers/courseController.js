@@ -169,14 +169,19 @@ exports.deleteCourse = async (req, res) => {
 // Get courses by instructor
 exports.getCoursesByInstructor = async (req, res) => {
   try {
-    const courses = await Course.find({ instructor: req.params.instructorId })
-      .populate('instructor', 'name email username')
+    const { instructorId } = req.params;
+
+    if (!instructorId) {
+      return res.status(400).json({ message: 'Instructor ID is required' });
+    }
+
+    const courses = await Course.find({ instructor: instructorId })
+      .populate('instructor', 'name username')
       .populate('students', 'name username');
-    
+
     res.status(200).json(courses);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message });
   }
 };
 
