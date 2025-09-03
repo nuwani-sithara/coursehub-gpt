@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../stylesheets/InstructorDashboard.css';
+import React from 'react';
+import Swal from 'sweetalert2';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
@@ -118,6 +120,12 @@ const InstructorDashboard = () => {
         } catch (error) {
             console.error('Error creating course:', error);
             alert('Error creating course: ' + (error.response?.data?.message || error.message));
+            await Swal.fire({
+                icon: 'error',
+                title: 'Creation Failed',
+                text: `Error creating course: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
         }
     };
 
@@ -130,7 +138,16 @@ const InstructorDashboard = () => {
                 formData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            alert('Course updated successfully!');
+            // alert('Course updated successfully!');
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Course updated successfully!',
+                confirmButtonColor: '#27ae60',
+                timer: 1500
+            });
+
             setEditingCourse(null);
             setFormData({
                 title: '',
@@ -143,23 +160,55 @@ const InstructorDashboard = () => {
             fetchCourses();
         } catch (error) {
             console.error('Error updating course:', error);
-            alert('Error updating course: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+                        
+            await Swal.fire({
+                icon: 'error',
+                title: 'Update Failed',
+                text: `Error updating course: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
         }
     };
 
     const handleDeleteCourse = async (courseId) => {
-        if (window.confirm('Are you sure you want to delete this course?')) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'This action cannot be undone. All enrollment data for this course will be lost.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+        
+        if (result.isConfirmed) {
             try {
                 const token = localStorage.getItem('token');
                 await axios.delete(
                     `${process.env.REACT_APP_BACKEND_URL}/courses/delete-course/${courseId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                alert('Course deleted successfully!');
+                
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Course deleted successfully!',
+                    confirmButtonColor: '#27ae60',
+                    timer: 1500
+                });
+                
                 fetchCourses();
             } catch (error) {
                 console.error('Error deleting course:', error);
-                alert('Error deleting course: ' + (error.response?.data?.message || error.message));
+                const errorMessage = error.response?.data?.message || error.message;
+                
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Deletion Failed',
+                    text: `Error deleting course: ${errorMessage}`,
+                    confirmButtonColor: '#e74c3c'
+                });
             }
         }
     };
@@ -177,9 +226,29 @@ const InstructorDashboard = () => {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You will be logged out of your account.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3498db',
+            cancelButtonColor: '#e74c3c',
+            confirmButtonText: 'Yes, logout!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/login');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Logged Out!',
+                    text: 'You have been successfully logged out.',
+                    confirmButtonColor: '#27ae60',
+                    timer: 1500
+                });
+            }
+        });
     };
 
     if (loading) {
