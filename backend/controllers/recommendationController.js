@@ -1,5 +1,6 @@
 const { OpenAI } = require('openai');
 const { HfInference } = require('@huggingface/inference');
+const { CohereClient } = require('cohere-ai'); // Updated import
 const Course = require('../models/course');
 const Enrollment = require('../models/enrollment');
 
@@ -10,10 +11,19 @@ const openai = new OpenAI({
 
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
+// Initialize Cohere client
+let cohere;
+if (process.env.COHERE_API_KEY) {
+  cohere = new CohereClient({
+    token: process.env.COHERE_API_KEY, // Use 'token' instead of init
+  });
+}
+
 console.log('OpenAI Key:', process.env.OPENAI_API_KEY ? 'Loaded' : 'Missing');
 console.log('HF Key:', process.env.HUGGINGFACE_API_KEY ? 'Loaded' : 'Missing');
+console.log('Cohere Key:', process.env.COHERE_API_KEY ? 'Loaded' : 'Missing');
 
-// Get personalized course recommendations with dual AI providers
+// Get personalized course recommendations with triple AI providers
 exports.getCourseRecommendations = async (req, res) => {
   try {
     const { prompt, maxCourses = 5 } = req.body;
@@ -69,11 +79,19 @@ exports.getCourseRecommendations = async (req, res) => {
         recommendations = await getHuggingFaceRecommendations(prompt, coursesContext, maxCourses);
         aiProvider = 'Hugging Face';
       } catch (hfError) {
-        console.log('Both AI providers failed, using keyword matching:', hfError.message);
+        console.log('Hugging Face failed, trying Cohere:', hfError.message);
         
-        // Final fallback: keyword matching
-        recommendations = getKeywordBasedRecommendations(prompt, allCourses, maxCourses);
-        aiProvider = 'Keyword Matching';
+        // Try Cohere as third option
+        try {
+          recommendations = await getCohereRecommendations(prompt, coursesContext, maxCourses);
+          aiProvider = 'Cohere';
+        } catch (cohereError) {
+          console.log('All AI providers failed, using enhanced keyword matching:', cohereError.message);
+          
+          // Final fallback: enhanced keyword matching
+          recommendations = getEnhancedKeywordRecommendations(prompt, allCourses, maxCourses);
+          aiProvider = 'Enhanced Keyword Matching';
+        }
       }
     }
 
@@ -150,7 +168,7 @@ async function getOpenAIRecommendations(prompt, coursesContext, maxCourses) {
   return result.recommendations || [];
 }
 
-// Hugging Face recommendation function (fixed)
+// Hugging Face recommendation function
 async function getHuggingFaceRecommendations(prompt, coursesContext, maxCourses) {
   try {
     const hfPrompt = `
@@ -169,9 +187,8 @@ async function getHuggingFaceRecommendations(prompt, coursesContext, maxCourses)
       Maximum ${maxCourses} courses. Only recommend courses that exist in the available list.
     `;
 
-    // Call Hugging Face text generation
     const response = await hf.textGeneration({
-      model: 'google/flan-t5-base',  // ✅ supported model
+      model: 'google/flan-t5-base',
       inputs: hfPrompt,
       parameters: {
         max_new_tokens: 300,
@@ -182,32 +199,20 @@ async function getHuggingFaceRecommendations(prompt, coursesContext, maxCourses)
 
     console.log('Hugging Face raw response:', response);
 
-    // Extract JSON array safely
     const responseText = response.generated_text || '';
     let recommendations = [];
 
-    // Try direct JSON parse
+    // Try to extract JSON from response
     try {
       const jsonMatch = responseText.match(/\[.*\]/s);
       if (jsonMatch) {
         recommendations = JSON.parse(jsonMatch[0]);
-      } else {
-        // fallback: parse line by line in case model returns numbered list
-        const lines = responseText.split('\n');
-        lines.forEach(line => {
-          try {
-            const obj = JSON.parse(line.replace(/^\d+\.\s*/, ''));
-            recommendations.push(obj);
-          } catch (err) {
-            // ignore non-JSON lines
-          }
-        });
       }
     } catch (parseError) {
       console.log('Failed to parse Hugging Face response JSON:', parseError.message);
+      throw new Error('Hugging Face response parsing failed');
     }
 
-    // Limit to maxCourses
     return recommendations.slice(0, maxCourses);
 
   } catch (error) {
@@ -216,17 +221,97 @@ async function getHuggingFaceRecommendations(prompt, coursesContext, maxCourses)
   }
 }
 
-// Keyword-based fallback recommendation function
-function getKeywordBasedRecommendations(prompt, allCourses, maxCourses) {
+// Cohere recommendation function (updated for new SDK)
+async function getCohereRecommendations(prompt, coursesContext, maxCourses) {
+  if (!process.env.COHERE_API_KEY || !cohere) {
+    throw new Error('Cohere API key not configured');
+  }
+
+  try {
+    const coherePrompt = `
+      You are a course recommendation assistant. Based on the user query: "${prompt}"
+
+      Available courses: ${JSON.stringify(coursesContext)}
+
+      Recommend the most relevant courses from the available list. Return ONLY a JSON array of course recommendation objects.
+
+      Example format:
+      [
+        {"courseId": "course_id_1", "reason": "Explanation"},
+        {"courseId": "course_id_2", "reason": "Explanation"}
+      ]
+
+      Maximum ${maxCourses} courses. Only recommend courses that exist in the available list.
+    `;
+
+    const response = await cohere.generate({
+      model: 'command',
+      prompt: coherePrompt,
+      maxTokens: 300,
+      temperature: 0.3,
+      k: 0,
+      p: 0.75,
+      stopSequences: [],
+      returnLikelihoods: 'NONE'
+    });
+
+    console.log('Cohere raw response:', response);
+
+    const responseText = response.generations[0].text;
+    let recommendations = [];
+
+    // Try to extract JSON from response
+    try {
+      const jsonMatch = responseText.match(/\[.*\]/s);
+      if (jsonMatch) {
+        recommendations = JSON.parse(jsonMatch[0]);
+      }
+    } catch (parseError) {
+      console.log('Failed to parse Cohere response JSON:', parseError.message);
+      
+      // Alternative: try to extract course IDs using regex
+      const idRegex = /["']([a-f0-9]{24})["']/g;
+      let match;
+      const courseIds = [];
+      
+      while ((match = idRegex.exec(responseText)) !== null) {
+        courseIds.push(match[1]);
+      }
+      
+      if (courseIds.length > 0) {
+        recommendations = courseIds.map(id => ({
+          courseId: id,
+          reason: "Recommended based on your query"
+        }));
+      } else {
+        throw new Error('Could not extract recommendations from Cohere response');
+      }
+    }
+
+    return recommendations.slice(0, maxCourses);
+
+  } catch (error) {
+    console.log('Cohere API error:', error.message);
+    throw new Error('Cohere recommendations failed');
+  }
+}
+
+// Enhanced keyword-based recommendation function
+function getEnhancedKeywordRecommendations(prompt, allCourses, maxCourses) {
   const promptLower = prompt.toLowerCase();
-  const keywordWeights = {
-    'programming': 5, 'code': 4, 'developer': 4, 'software': 4,
-    'web': 4, 'website': 3, 'html': 4, 'css': 4, 'javascript': 5,
-    'python': 5, 'java': 4, 'react': 4, 'node': 4,
-    'data': 4, 'science': 3, 'analysis': 3, 'machine': 4, 'ai': 4,
-    'design': 3, 'ux': 3, 'ui': 3, 'graphic': 3,
-    'business': 3, 'marketing': 3, 'finance': 3,
-    'beginner': 2, 'intermediate': 2, 'advanced': 2
+  
+  // Define keyword categories and their weights
+  const keywordCategories = {
+    programming: ['programming', 'code', 'developer', 'software', 'algorithm', 'script', 'api'],
+    web: ['web', 'website', 'html', 'css', 'javascript', 'react', 'angular', 'vue', 'frontend', 'backend'],
+    python: ['python', 'django', 'flask', 'pandas', 'numpy'],
+    java: ['java', 'spring', 'jvm'],
+    data: ['data', 'database', 'sql', 'nosql', 'mongodb', 'analysis', 'analytics'],
+    ai: ['ai', 'artificial intelligence', 'machine learning', 'ml', 'neural', 'deep learning'],
+    design: ['design', 'ux', 'ui', 'user experience', 'user interface', 'graphic', 'figma'],
+    business: ['business', 'marketing', 'finance', 'management', 'entrepreneur', 'startup'],
+    beginner: ['beginner', 'intro', 'introduction', 'basic', 'fundamental', 'starter'],
+    advanced: ['advanced', 'expert', 'professional', 'master', 'deep dive']
   };
 
   // Score courses based on keyword matching
@@ -234,32 +319,66 @@ function getKeywordBasedRecommendations(prompt, allCourses, maxCourses) {
     let score = 0;
     const courseText = `${course.title} ${course.description} ${course.category}`.toLowerCase();
     
-    // Check for exact matches
-    for (const [keyword, weight] of Object.entries(keywordWeights)) {
-      if (promptLower.includes(keyword) && courseText.includes(keyword)) {
-        score += weight;
+    // Check keyword categories
+    for (const [category, keywords] of Object.entries(keywordCategories)) {
+      const categoryMatch = keywords.some(keyword => 
+        promptLower.includes(keyword) && courseText.includes(keyword)
+      );
+      if (categoryMatch) {
+        score += 10;
       }
     }
     
-    // Check for partial matches
-    const promptWords = promptLower.split(/\s+/);
+    // Check individual word matches
+    const promptWords = promptLower.split(/\s+/).filter(word => word.length > 3);
     for (const word of promptWords) {
-      if (word.length > 3 && courseText.includes(word)) {
-        score += 2;
+      if (courseText.includes(word)) {
+        score += 3;
       }
+    }
+    
+    // Bonus for exact title matches
+    if (promptLower.includes(course.title.toLowerCase())) {
+      score += 15;
+    }
+    
+    // Bonus for category matches
+    if (promptLower.includes(course.category.toLowerCase())) {
+      score += 12;
     }
     
     return { course, score };
   });
 
-  // Sort by score and get top recommendations
-  return scoredCourses
+  // Filter out zero-score courses and sort
+  const filteredCourses = scoredCourses.filter(item => item.score > 0);
+  
+  if (filteredCourses.length === 0) {
+    // If no matches, return diverse courses from different categories
+    return allCourses
+      .sort(() => Math.random() - 0.5)
+      .slice(0, maxCourses)
+      .map(course => ({
+        courseId: course._id.toString(),
+        reason: "You might be interested in this course"
+      }));
+  }
+
+  // Return top scored courses
+  return filteredCourses
     .sort((a, b) => b.score - a.score)
     .slice(0, maxCourses)
-    .map((item, index) => ({
+    .map(item => ({
       courseId: item.course._id.toString(),
-      reason: item.score > 0 ? `Matches your interest in ${prompt}` : 'Available course that might interest you'
+      reason: getReasonFromScore(item.score, prompt)
     }));
+}
+
+// Helper to generate reason based on score
+function getReasonFromScore(score, prompt) {
+  if (score > 20) return `Highly relevant to your interest in ${prompt}`;
+  if (score > 10) return `Matches your interest in ${prompt}`;
+  return `Related to your search for ${prompt}`;
 }
 
 // Helper function to enrich recommendations with course data
@@ -356,18 +475,29 @@ exports.getPersonalizedRecommendations = async (req, res) => {
         );
         aiProvider = 'Hugging Face';
       } catch (hfError) {
-        console.log('Both AI providers failed, using category-based matching:', hfError.message);
+        console.log('Hugging Face failed, trying Cohere:', hfError.message);
         
-        // Fallback: recommend courses in similar categories
-        const userCategories = [...new Set(userContext.enrolledCourses.map(ec => ec.category))];
-        recommendations = allCourses
-          .filter(course => userCategories.includes(course.category))
-          .slice(0, maxCourses)
-          .map(course => ({
-            courseId: course._id.toString(),
-            reason: `Similar to your interests in ${course.category}`
-          }));
-        aiProvider = 'Category Matching';
+        try {
+          recommendations = await getCohereRecommendations(
+            "Suggest courses based on user's learning history", 
+            userContext.availableCourses, 
+            maxCourses
+          );
+          aiProvider = 'Cohere';
+        } catch (cohereError) {
+          console.log('All AI providers failed, using category-based matching:', cohereError.message);
+          
+          // Fallback: recommend courses in similar categories
+          const userCategories = [...new Set(userContext.enrolledCourses.map(ec => ec.category))];
+          recommendations = allCourses
+            .filter(course => userCategories.includes(course.category))
+            .slice(0, maxCourses)
+            .map(course => ({
+              courseId: course._id.toString(),
+              reason: `Similar to your interests in ${course.category}`
+            }));
+          aiProvider = 'Category Matching';
+        }
       }
     }
 
