@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -8,17 +8,11 @@ const CourseDetail = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
     const [course, setCourse] = useState(null);
-    const [enrollment, setEnrollment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('enrolled');
 
-    useEffect(() => {
-        fetchCourseDetails();
-        fetchEnrollmentDetails();
-    }, [courseId]);
-
-    const fetchCourseDetails = async () => {
+    const fetchCourseDetails = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/courses/course/${courseId}`, {
@@ -34,9 +28,9 @@ const CourseDetail = () => {
                 confirmButtonColor: '#e74c3c'
             });
         }
-    };
+    }, [courseId]);
 
-    const fetchEnrollmentDetails = async () => {
+    const fetchEnrollmentDetails = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/enrollments/my-courses`, {
@@ -48,7 +42,6 @@ const CourseDetail = () => {
             );
             
             if (userEnrollment) {
-                setEnrollment(userEnrollment);
                 setProgress(userEnrollment.progress);
                 setStatus(userEnrollment.status);
             }
@@ -63,7 +56,12 @@ const CourseDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId]);
+
+    useEffect(() => {
+        fetchCourseDetails();
+        fetchEnrollmentDetails();
+    }, [fetchCourseDetails, fetchEnrollmentDetails]);
 
     const updateProgress = async (newProgress) => {
         try {

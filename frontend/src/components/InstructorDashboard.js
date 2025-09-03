@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import '../stylesheets/InstructorDashboard.css';
-import React from 'react';
 import Swal from 'sweetalert2';
+import '../stylesheets/InstructorDashboard.css';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
@@ -39,8 +38,6 @@ const InstructorDashboard = () => {
     }
     }, []);
 
-
-
     const fetchUserData = () => {
         const userData = JSON.parse(localStorage.getItem('user'));
         setUser(userData);
@@ -68,7 +65,6 @@ const InstructorDashboard = () => {
         setLoading(false);
     }
     };
-
 
     const fetchEnrollments = async (courseId) => {
         try {
@@ -98,8 +94,8 @@ const InstructorDashboard = () => {
                 formData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            // alert('Course created successfully!');
-             await Swal.fire({
+            
+            await Swal.fire({
                 icon: 'success',
                 title: 'Success!',
                 text: 'Course created successfully!',
@@ -119,7 +115,8 @@ const InstructorDashboard = () => {
             fetchCourses();
         } catch (error) {
             console.error('Error creating course:', error);
-            alert('Error creating course: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+            
             await Swal.fire({
                 icon: 'error',
                 title: 'Creation Failed',
@@ -138,8 +135,7 @@ const InstructorDashboard = () => {
                 formData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            // alert('Course updated successfully!');
-
+            
             await Swal.fire({
                 icon: 'success',
                 title: 'Success!',
@@ -147,7 +143,7 @@ const InstructorDashboard = () => {
                 confirmButtonColor: '#27ae60',
                 timer: 1500
             });
-
+            
             setEditingCourse(null);
             setFormData({
                 title: '',
@@ -161,7 +157,7 @@ const InstructorDashboard = () => {
         } catch (error) {
             console.error('Error updating course:', error);
             const errorMessage = error.response?.data?.message || error.message;
-                        
+            
             await Swal.fire({
                 icon: 'error',
                 title: 'Update Failed',
