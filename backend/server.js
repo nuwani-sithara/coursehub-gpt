@@ -34,6 +34,9 @@ app.use('/courses', courseRoutes);
 const enrollmentRoutes = require('./routes/enrollmentRoute.js');
 app.use('/enrollments', enrollmentRoutes);
 
+const recommendationRoutes = require('./routes/recommendationRoute.js');
+app.use('/ai-recommendations', recommendationRoutes);
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
