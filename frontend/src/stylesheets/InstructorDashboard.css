@@ -1,0 +1,222 @@
+.instructor-dashboard {
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7f9;
+    min-height: 100vh;
+}
+
+.courses-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.create-course-btn {
+    padding: 10px 20px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.create-course-btn:hover {
+    background: #219653;
+}
+
+.courses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.course-item {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.course-info h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.course-meta {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.course-category, .course-level, .course-duration {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.course-category {
+    background: #e8f4fc;
+    color: #3498db;
+}
+
+.course-level {
+    background: #e6f7ee;
+    color: #27ae60;
+}
+
+.course-duration {
+    background: #fef5e7;
+    color: #e67e22;
+}
+
+.course-actions {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.edit-btn, .view-enrollments-btn, .delete-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.edit-btn {
+    background: #3498db;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #2980b9;
+}
+
+.view-enrollments-btn {
+    background: #9b59b6;
+    color: white;
+}
+
+.view-enrollments-btn:hover {
+    background: #8e44ad;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.delete-btn:hover {
+    background: #c0392b;
+}
+
+.enrollments-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.enrollments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.enrollments-table th, .enrollments-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.enrollments-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal h2 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.modal-actions button[type="button"] {
+    background: #95a5a6;
+    color: white;
+}
+
+.modal-actions button[type="button"]:hover {
+    background: #7f8c8d;
+}
+
+.modal-actions button[type="submit"] {
+    background: #3498db;
+    color: white;
+}
+
+.modal-actions button[type="submit"]:hover {
+    background: #2980b9;
+}

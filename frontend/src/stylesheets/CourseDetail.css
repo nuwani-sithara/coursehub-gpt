@@ -1,0 +1,193 @@
+.course-detail {
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7f9;
+    min-height: 100vh;
+}
+
+.course-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn {
+    padding: 8px 16px;
+    background: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.back-btn:hover {
+    background: #7f8c8d;
+}
+
+.course-header h1 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.course-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+.course-info, .course-material {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.course-category, .course-level, .course-duration {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.course-category {
+    background: #e8f4fc;
+    color: #3498db;
+}
+
+.course-level {
+    background: #e6f7ee;
+    color: #27ae60;
+}
+
+.course-duration {
+    background: #fef5e7;
+    color: #e67e22;
+}
+
+.instructor-info, .enrollment-status, .progress-controls {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.instructor-info h3, .enrollment-status h3, .progress-controls h3 {
+    color: #2c3e50;
+    margin-top: 0;
+}
+
+.progress-container {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    height: 10px;
+    background: #ecf0f1;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 5px;
+    transition: width 0.5s;
+}
+
+.progress-buttons, .status-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.progress-buttons button, .status-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.progress-buttons button {
+    background: #3498db;
+    color: white;
+}
+
+.progress-buttons button:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.progress-buttons button:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.status-buttons button {
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+
+.status-buttons button.active {
+    background: #3498db;
+    color: white;
+}
+
+.status-buttons button:hover {
+    background: #dfe6e9;
+}
+
+.status-buttons button.active:hover {
+    background: #2980b9;
+}
+
+.course-material h2 {
+    color: #2c3e50;
+    margin-top: 0;
+}
+
+.content-section {
+    margin-bottom: 30px;
+}
+
+.content-section h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+.course-content-text {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 18px;
+}
+
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 18px;
+    color: #e74c3c;
+}
