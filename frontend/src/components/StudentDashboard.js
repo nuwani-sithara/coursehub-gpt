@@ -6,6 +6,7 @@ import AvailableCourses from './AvailableCourses';
 import MyCourses from './MyCourses';
 import AIRecommendations from './AIRecommendations';
 import '../stylesheets/StudentDashboard.css';
+import Footer from './Footer';
 
 const StudentDashboard = () => {
     const [user, setUser] = useState(null);
@@ -210,6 +211,7 @@ const StudentDashboard = () => {
                     </div>
                 </div>
             </main>
+            <Footer />
         </div>
     );
 };

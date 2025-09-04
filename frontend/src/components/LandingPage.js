@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../stylesheets/LandingPage.css';
+// import image from '../assets/coursehub-logo.png';
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -21,6 +22,9 @@ const LandingPage = () => {
         <div className="landing-page">
             <header className="landing-header">
                 <div className="container">
+                    {/* <logo>
+                        <img src={image} width={50} height={50} alt="CourseHub Logo" />
+                    </logo> */}
                     <h1 className="logo">CourseHub-GPT</h1>
                     <nav className="nav-menu">
                         <button onClick={handleLogin} className="login-btn">Login</button>
@@ -46,6 +50,7 @@ const LandingPage = () => {
                         <div className="hero-image">
                             <div className="placeholder-image">
                                 <i className="fas fa-graduation-cap"></i>
+                                {/* <img src={image} alt="Learning Illustration" /> */}
                             </div>
                         </div>
                     </div>
@@ -53,7 +58,7 @@ const LandingPage = () => {
 
                 <section className="features-section">
                     <div className="container">
-                        <h2>Why Choose LearnHub?</h2>
+                        <h2>Why Choose CourseHub-GPT?</h2>
                         <div className="features-grid">
                             <div className="feature-card">
                                 <div className="feature-icon">

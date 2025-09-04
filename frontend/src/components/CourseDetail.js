@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../stylesheets/CourseDetail.css';
+import Footer from './Footer';
 
 const CourseDetail = () => {
     const { courseId } = useParams();
@@ -341,6 +342,7 @@ const CourseDetail = () => {
                     </div>
                 </div>
             </main>
+            <Footer />
         </div>
     );
 };

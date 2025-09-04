@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../stylesheets/InstructorDashboard.css';
+import Footer from './Footer';
 
 const InstructorDashboard = () => {
     const navigate = useNavigate();
@@ -586,6 +587,7 @@ const InstructorDashboard = () => {
                     </div>
                 </div>
             )}
+            <Footer />
         </div>
     );
 };
