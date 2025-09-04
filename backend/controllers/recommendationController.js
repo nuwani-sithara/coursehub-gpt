@@ -302,7 +302,7 @@ function getEnhancedKeywordRecommendations(prompt, allCourses, maxCourses) {
   
   // Define keyword categories and their weights
   const keywordCategories = {
-    programming: ['programming', 'code', 'developer', 'software', 'algorithm', 'script', 'api'],
+    programming: ['programming', 'code', 'developer', 'software', 'algorithm', 'script', 'api', 'software engineer'],
     web: ['web', 'website', 'html', 'css', 'javascript', 'react', 'angular', 'vue', 'frontend', 'backend'],
     python: ['python', 'django', 'flask', 'pandas', 'numpy'],
     java: ['java', 'spring', 'jvm'],
