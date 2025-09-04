@@ -105,7 +105,7 @@ const StudentDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/recommendations/recommend`, {
+            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/ai-recommendations/recommend`, {
                 prompt: aiPrompt,
                 maxCourses: 5
             }, {

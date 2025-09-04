@@ -23,19 +23,19 @@ const InstructorDashboard = () => {
     });
 
     useEffect(() => {
-    fetchUserData();
+        fetchUserData();
     }, []);
 
     useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    console.log("userData from localStorage:", userData);
+        const userData = JSON.parse(localStorage.getItem("user"));
+        console.log("userData from localStorage:", userData);
 
-    if (userData?.id || userData?._id) {
-        const instructorId = userData.id || userData._id; // ✅ support both
-        fetchCourses(instructorId);
-    } else {
-        console.error("No instructor ID found in localStorage");
-    }
+        if (userData?.id || userData?._id) {
+            const instructorId = userData.id || userData._id;
+            fetchCourses(instructorId);
+        } else {
+            console.error("No instructor ID found in localStorage");
+        }
     }, []);
 
     const fetchUserData = () => {
@@ -44,26 +44,26 @@ const InstructorDashboard = () => {
     };
 
     const fetchCourses = async (instructorId) => {
-    try {
-        const token = localStorage.getItem("token");
-        console.log("Fetching courses for instructorId:", instructorId);
+        try {
+            const token = localStorage.getItem("token");
+            console.log("Fetching courses for instructorId:", instructorId);
 
-        const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/courses/course-instructor/${instructorId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCourses(response.data);
-    } catch (error) {
-        console.error("Error fetching courses:", error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Failed to fetch courses. Please try again later.',
-            confirmButtonColor: '#e74c3c'
-        });
-    } finally {
-        setLoading(false);
-    }
+            const response = await axios.get(
+                `${process.env.REACT_APP_BACKEND_URL}/courses/course-instructor/${instructorId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setCourses(response.data);
+        } catch (error) {
+            console.error("Error fetching courses:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to fetch courses. Please try again later.',
+                confirmButtonColor: '#e74c3c'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const fetchEnrollments = async (courseId) => {
@@ -112,7 +112,11 @@ const InstructorDashboard = () => {
                 duration: '',
                 level: 'Beginner'
             });
-            fetchCourses();
+            
+            // Refresh courses list
+            const userData = JSON.parse(localStorage.getItem("user"));
+            const instructorId = userData.id || userData._id;
+            fetchCourses(instructorId);
         } catch (error) {
             console.error('Error creating course:', error);
             const errorMessage = error.response?.data?.message || error.message;
@@ -153,7 +157,11 @@ const InstructorDashboard = () => {
                 duration: '',
                 level: 'Beginner'
             });
-            fetchCourses();
+            
+            // Refresh courses list
+            const userData = JSON.parse(localStorage.getItem("user"));
+            const instructorId = userData.id || userData._id;
+            fetchCourses(instructorId);
         } catch (error) {
             console.error('Error updating course:', error);
             const errorMessage = error.response?.data?.message || error.message;
@@ -194,7 +202,10 @@ const InstructorDashboard = () => {
                     timer: 1500
                 });
                 
-                fetchCourses();
+                // Refresh courses list
+                const userData = JSON.parse(localStorage.getItem("user"));
+                const instructorId = userData.id || userData._id;
+                fetchCourses(instructorId);
             } catch (error) {
                 console.error('Error deleting course:', error);
                 const errorMessage = error.response?.data?.message || error.message;
@@ -234,7 +245,7 @@ const InstructorDashboard = () => {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                navigate('/login');
+                navigate('/');
                 
                 Swal.fire({
                     icon: 'success',
@@ -248,103 +259,145 @@ const InstructorDashboard = () => {
     };
 
     if (loading) {
-        return <div className="loading">Loading...</div>;
+        return (
+            <div className="instructor-dashboard-loading">
+                <div className="loading-spinner"></div>
+                <p>Loading your courses...</p>
+            </div>
+        );
     }
 
     return (
         <div className="instructor-dashboard">
-            <header className="dashboard-header">
-                <h1>Instructor Dashboard</h1>
-                <div className="user-info">
-                    <span>Welcome, {user?.name}</span>
-                    <button onClick={logout} className="logout-btn">Logout</button>
+            <header className="instructor-header">
+                <div className="container">
+                    <h1 className="instructor-logo">CourseHub-GPT Instructor</h1>
+                    <div className="instructor-user-info">
+                        <span>Welcome, {user?.name}</span>
+                        <button onClick={logout} className="instructor-logout-btn">
+                            <i className="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <div className="dashboard-tabs">
-                <button 
-                    className={activeTab === 'my-courses' ? 'active' : ''} 
-                    onClick={() => setActiveTab('my-courses')}
-                >
-                    My Courses
-                </button>
-            </div>
+            <main className="instructor-main">
+                <div className="container">
+                    <div className="instructor-hero">
+                        <h2>Manage Your Courses</h2>
+                        <p>Create, edit, and monitor your courses and student enrollments</p>
+                    </div>
 
-            <div className="dashboard-content">
-                {activeTab === 'my-courses' && (
-                    <div>
+                    <div className="instructor-content">
                         <div className="courses-header">
-                            <h2>My Courses</h2>
+                            <h3>My Courses</h3>
                             <button 
                                 onClick={() => setShowCreateModal(true)}
                                 className="create-course-btn"
                             >
-                                Create New Course
+                                <i className="fas fa-plus"></i> Create New Course
                             </button>
                         </div>
 
                         {courses.length === 0 ? (
-                            <p>You haven't created any courses yet.</p>
+                            <div className="no-courses">
+                                <i className="fas fa-book-open"></i>
+                                <h4>No Courses Yet</h4>
+                                <p>You haven't created any courses. Start by creating your first course!</p>
+                                <button 
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="create-course-btn"
+                                >
+                                    <i className="fas fa-plus"></i> Create Your First Course
+                                </button>
+                            </div>
                         ) : (
                             <div className="courses-list">
                                 {courses.map(course => (
-                                    <div key={course._id} className="course-item">
-                                        <div className="course-info">
-                                            <h3>{course.title}</h3>
-                                            <p>{course.description}</p>
+                                    <div key={course._id} className="course-card">
+                                        <div className="course-card-header">
+                                            <h4>{course.title}</h4>
                                             <div className="course-meta">
-                                                <span className="course-category">{course.category}</span>
-                                                <span className="course-level">{course.level}</span>
-                                                <span className="course-duration">{course.duration}</span>
+                                                <span className={`course-badge course-level-${course.level.toLowerCase()}`}>
+                                                    {course.level}
+                                                </span>
+                                                <span className="course-badge course-category">
+                                                    {course.category}
+                                                </span>
                                             </div>
                                         </div>
+                                        
+                                        <p className="course-description">{course.description}</p>
+                                        
+                                        {course.duration && (
+                                            <div className="course-duration">
+                                                <i className="fas fa-clock"></i> {course.duration}
+                                            </div>
+                                        )}
+                                        
                                         <div className="course-actions">
                                             <button 
                                                 onClick={() => openEditModal(course)}
-                                                className="edit-btn"
+                                                className="course-action-btn edit-btn"
                                             >
-                                                Edit
+                                                <i className="fas fa-edit"></i> Edit
                                             </button>
                                             <button 
                                                 onClick={() => fetchEnrollments(course._id)}
-                                                className="view-enrollments-btn"
+                                                className="course-action-btn enrollments-btn"
                                             >
-                                                View Enrollments
+                                                <i className="fas fa-users"></i> Enrollments
                                             </button>
                                             <button 
                                                 onClick={() => handleDeleteCourse(course._id)}
-                                                className="delete-btn"
+                                                className="course-action-btn delete-btn"
                                             >
-                                                Delete
+                                                <i className="fas fa-trash"></i> Delete
                                             </button>
                                         </div>
 
                                         {enrollments[course._id] && (
                                             <div className="enrollments-section">
-                                                <h4>Enrolled Students</h4>
+                                                <h5>Enrolled Students ({enrollments[course._id].length})</h5>
                                                 {enrollments[course._id].length === 0 ? (
-                                                    <p>No students enrolled yet.</p>
+                                                    <p className="no-enrollments">No students enrolled yet.</p>
                                                 ) : (
-                                                    <table className="enrollments-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Student Name</th>
-                                                                <th>Enrollment Date</th>
-                                                                <th>Status</th>
-                                                                <th>Progress</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {enrollments[course._id].map(enrollment => (
-                                                                <tr key={enrollment._id}>
-                                                                    <td>{enrollment.student?.name || 'Unknown'}</td>
-                                                                    <td>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</td>
-                                                                    <td>{enrollment.status}</td>
-                                                                    <td>{enrollment.progress}%</td>
+                                                    <div className="enrollments-table-container">
+                                                        <table className="enrollments-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Student Name</th>
+                                                                    <th>Enrollment Date</th>
+                                                                    <th>Status</th>
+                                                                    <th>Progress</th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody>
+                                                                {enrollments[course._id].map(enrollment => (
+                                                                    <tr key={enrollment._id}>
+                                                                        <td>{enrollment.student?.name || 'Unknown'}</td>
+                                                                        <td>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</td>
+                                                                        <td>
+                                                                            <span className={`status-badge status-${enrollment.status}`}>
+                                                                                {enrollment.status}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div className="progress-container">
+                                                                                <div className="progress-bar">
+                                                                                    <div 
+                                                                                        className="progress-fill" 
+                                                                                        style={{ width: `${enrollment.progress}%` }}
+                                                                                    ></div>
+                                                                                </div>
+                                                                                <span>{enrollment.progress}%</span>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
@@ -353,47 +406,61 @@ const InstructorDashboard = () => {
                             </div>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
+            </main>
 
             {/* Create Course Modal */}
             {showCreateModal && (
                 <div className="modal-overlay">
                     <div className="modal">
-                        <h2>Create New Course</h2>
+                        <div className="modal-header">
+                            <h2>Create New Course</h2>
+                            <button 
+                                className="modal-close"
+                                onClick={() => setShowCreateModal(false)}
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
                         <form onSubmit={handleCreateCourse}>
                             <div className="form-group">
-                                <label>Title</label>
+                                <label>Title *</label>
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     required
+                                    placeholder="Enter course title"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Description</label>
+                                <label>Description *</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     required
+                                    placeholder="Enter course description"
+                                    rows="3"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Content</label>
+                                <label>Content *</label>
                                 <textarea
                                     value={formData.content}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                                     required
+                                    placeholder="Enter course content/materials"
+                                    rows="5"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Category</label>
+                                <label>Category *</label>
                                 <input
                                     type="text"
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     required
+                                    placeholder="e.g., Programming, Design, Business"
                                 />
                             </div>
                             <div className="form-group">
@@ -402,7 +469,7 @@ const InstructorDashboard = () => {
                                     type="text"
                                     value={formData.duration}
                                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                    placeholder="e.g., 10 hours"
+                                    placeholder="e.g., 10 hours, 4 weeks"
                                 />
                             </div>
                             <div className="form-group">
@@ -417,8 +484,16 @@ const InstructorDashboard = () => {
                                 </select>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                                <button type="submit">Create Course</button>
+                                <button 
+                                    type="button" 
+                                    className="btn-secondary"
+                                    onClick={() => setShowCreateModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    Create Course
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -429,10 +504,18 @@ const InstructorDashboard = () => {
             {editingCourse && (
                 <div className="modal-overlay">
                     <div className="modal">
-                        <h2>Edit Course</h2>
+                        <div className="modal-header">
+                            <h2>Edit Course</h2>
+                            <button 
+                                className="modal-close"
+                                onClick={() => setEditingCourse(null)}
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
                         <form onSubmit={handleUpdateCourse}>
                             <div className="form-group">
-                                <label>Title</label>
+                                <label>Title *</label>
                                 <input
                                     type="text"
                                     value={formData.title}
@@ -441,23 +524,25 @@ const InstructorDashboard = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Description</label>
+                                <label>Description *</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     required
+                                    rows="3"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Content</label>
+                                <label>Content *</label>
                                 <textarea
                                     value={formData.content}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                                     required
+                                    rows="5"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Category</label>
+                                <label>Category *</label>
                                 <input
                                     type="text"
                                     value={formData.category}
@@ -486,8 +571,16 @@ const InstructorDashboard = () => {
                                 </select>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" onClick={() => setEditingCourse(null)}>Cancel</button>
-                                <button type="submit">Update Course</button>
+                                <button 
+                                    type="button" 
+                                    className="btn-secondary"
+                                    onClick={() => setEditingCourse(null)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    Update Course
+                                </button>
                             </div>
                         </form>
                     </div>
