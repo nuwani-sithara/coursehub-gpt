@@ -1,0 +1,56 @@
+.student-header {
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.student-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.student-logo {
+    color: #3498db;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.student-user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.student-logout-btn {
+    padding: 8px 16px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.student-logout-btn:hover {
+    background: #c0392b;
+}
+
+@media (max-width: 768px) {
+    .student-header .container {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+}

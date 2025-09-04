@@ -1,0 +1,160 @@
+.ai-recommendations-section {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.ai-hero {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.ai-hero h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.ai-hero p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+.prompt-input-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.prompt-input {
+    flex: 1;
+    min-width: 300px;
+    padding: 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.prompt-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.get-recommendations-btn {
+    padding: 15px 25px;
+    background: #9b59b6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.get-recommendations-btn:hover {
+    background: #8e44ad;
+    transform: translateY(-2px);
+}
+
+.recommendations-results h4 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #e1e8ed;
+    padding-bottom: 10px;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.recommendation-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid #e1e8ed;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.recommendation-header h5 {
+    color: #2c3e50;
+    margin: 0 0 12px 0;
+    font-size: 1.3rem;
+    line-height: 1.3;
+}
+
+.reason {
+    font-style: italic;
+    color: #7f8c8d;
+    margin: 10px 0;
+    font-size: 0.9rem;
+}
+
+.course-description {
+    color: #7f8c8d;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.enroll-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    background: #27ae60;
+    color: white;
+}
+
+.enroll-btn:hover:not(:disabled) {
+    background: #219653;
+    transform: translateY(-2px);
+}
+
+.enroll-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@media (max-width: 768px) {
+    .prompt-input-container {
+        flex-direction: column;
+    }
+    
+    .prompt-input {
+        min-width: auto;
+    }
+    
+    .get-recommendations-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .recommendations-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .recommendation-card {
+        padding: 20px 15px;
+    }
+}
