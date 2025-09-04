@@ -38,7 +38,7 @@ const StudentDashboard = () => {
                 icon: 'error',
                 title: 'Error',
                 text: 'Failed to fetch courses. Please try again later.',
-                confirmButtonColor: '#3498db'
+                confirmButtonColor: '#e74c3c'
             });
         } finally {
             setLoading(false);
@@ -58,7 +58,7 @@ const StudentDashboard = () => {
                 icon: 'error',
                 title: 'Error',
                 text: 'Failed to fetch your enrolled courses. Please try again later.',
-                confirmButtonColor: '#3498db'
+                confirmButtonColor: '#e74c3c'
             });
         }
     };
@@ -152,7 +152,7 @@ const StudentDashboard = () => {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                navigate('/login');
+                navigate('/');
                 
                 Swal.fire({
                     icon: 'success',
@@ -166,136 +166,221 @@ const StudentDashboard = () => {
     };
 
     if (loading) {
-        return <div className="loading">Loading...</div>;
+        return (
+            <div className="student-dashboard-loading">
+                <div className="loading-spinner"></div>
+                <p>Loading your dashboard...</p>
+            </div>
+        );
     }
 
     return (
         <div className="student-dashboard">
-            <header className="dashboard-header">
-                <h1>Student Dashboard</h1>
-                <div className="user-info">
-                    <span>Welcome, {user?.name}</span>
-                    <button onClick={logout} className="logout-btn">Logout</button>
+            <header className="student-header">
+                <div className="container">
+                    <h1 className="student-logo">CourseHub-GPT Student</h1>
+                    <div className="student-user-info">
+                        <span>Welcome, {user?.name}</span>
+                        <button onClick={logout} className="student-logout-btn">
+                            <i className="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <div className="dashboard-tabs">
-                <button 
-                    className={activeTab === 'available' ? 'active' : ''} 
-                    onClick={() => setActiveTab('available')}
-                >
-                    Available Courses
-                </button>
-                <button 
-                    className={activeTab === 'enrolled' ? 'active' : ''} 
-                    onClick={() => setActiveTab('enrolled')}
-                >
-                    My Courses
-                </button>
-                <button 
-                    className={activeTab === 'ai' ? 'active' : ''} 
-                    onClick={() => setActiveTab('ai')}
-                >
-                    AI Recommendations
-                </button>
-            </div>
-
-            <div className="dashboard-content">
-                {activeTab === 'available' && (
-                    <div className="courses-grid">
-                        {courses.map(course => (
-                            <div key={course._id} className="course-card">
-                                <h3>{course.title}</h3>
-                                <p className="course-description">{course.description}</p>
-                                <div className="course-meta">
-                                    <span className="course-category">{course.category}</span>
-                                    <span className="course-level">{course.level}</span>
-                                </div>
-                                <p className="instructor">Instructor: {course.instructor?.name || 'Unknown'}</p>
-                                <button 
-                                    onClick={() => enrollInCourse(course._id)}
-                                    className="enroll-btn"
-                                    disabled={enrolledCourses.some(ec => ec.course?._id === course._id)}
-                                >
-                                    {enrolledCourses.some(ec => ec.course?._id === course._id) ? 'Enrolled' : 'Enroll'}
-                                </button>
-                            </div>
-                        ))}
+            <main className="student-main">
+                <div className="container">
+                    <div className="student-hero">
+                        <h2>Your Learning Journey</h2>
+                        <p>Discover new courses, track your progress, and achieve your learning goals</p>
                     </div>
-                )}
 
-                {activeTab === 'enrolled' && (
-                    <div className="enrolled-courses">
-                        {enrolledCourses.length === 0 ? (
-                            <p>You haven't enrolled in any courses yet.</p>
-                        ) : (
-                            enrolledCourses.map(enrollment => (
-                                <div key={enrollment._id} className="enrolled-course-card">
-                                    <h3>{enrollment.course?.title}</h3>
-                                    <p>{enrollment.course?.description}</p>
-                                    <div className="progress-container">
-                                        <div className="progress-bar">
-                                            <div 
-                                                className="progress-fill" 
-                                                style={{ width: `${enrollment.progress}%` }}
-                                            ></div>
-                                        </div>
-                                        <span>{enrollment.progress}% Complete</span>
+                    <div className="dashboard-tabs">
+                        <button 
+                            className={activeTab === 'available' ? 'active' : ''} 
+                            onClick={() => setActiveTab('available')}
+                        >
+                            <i className="fas fa-book"></i> Available Courses
+                        </button>
+                        <button 
+                            className={activeTab === 'enrolled' ? 'active' : ''} 
+                            onClick={() => setActiveTab('enrolled')}
+                        >
+                            <i className="fas fa-user-graduate"></i> My Courses
+                        </button>
+                        <button 
+                            className={activeTab === 'ai' ? 'active' : ''} 
+                            onClick={() => setActiveTab('ai')}
+                        >
+                            <i className="fas fa-robot"></i> AI Recommendations
+                        </button>
+                    </div>
+
+                    <div className="dashboard-content">
+                        {activeTab === 'available' && (
+                            <div className="courses-section">
+                                <h3>Available Courses</h3>
+                                {courses.length === 0 ? (
+                                    <div className="no-courses">
+                                        <i className="fas fa-book-open"></i>
+                                        <h4>No Courses Available</h4>
+                                        <p>There are currently no courses available. Please check back later.</p>
                                     </div>
-                                    <p>Status: {enrollment.status}</p>
-                                    <div className="course-actions">
+                                ) : (
+                                    <div className="courses-grid">
+                                        {courses.map(course => (
+                                            <div key={course._id} className="course-card">
+                                                <div className="course-card-header">
+                                                    <h4>{course.title}</h4>
+                                                    <div className="course-meta">
+                                                        <span className={`course-badge course-level-${course.level?.toLowerCase() || 'beginner'}`}>
+                                                            {course.level || 'Beginner'}
+                                                        </span>
+                                                        <span className="course-badge course-category">
+                                                            {course.category}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <p className="course-description">{course.description}</p>
+                                                
+                                                <div className="course-instructor">
+                                                    <i className="fas fa-chalkboard-teacher"></i>
+                                                    Instructor: {course.instructor?.name || 'Unknown'}
+                                                </div>
+                                                
+                                                <button 
+                                                    onClick={() => enrollInCourse(course._id)}
+                                                    className="enroll-btn"
+                                                    disabled={enrolledCourses.some(ec => ec.course?._id === course._id)}
+                                                >
+                                                    {enrolledCourses.some(ec => ec.course?._id === course._id) ? (
+                                                        <>
+                                                            <i className="fas fa-check"></i> Enrolled
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="fas fa-plus"></i> Enroll
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'enrolled' && (
+                            <div className="enrolled-courses-section">
+                                <h3>My Enrolled Courses</h3>
+                                {enrolledCourses.length === 0 ? (
+                                    <div className="no-enrolled-courses">
+                                        <i className="fas fa-graduation-cap"></i>
+                                        <h4>No Enrolled Courses</h4>
+                                        <p>You haven't enrolled in any courses yet. Browse available courses to get started!</p>
                                         <button 
-                                            onClick={() => goToCourse(enrollment.course?._id)}
-                                            className="go-to-course-btn"
+                                            onClick={() => setActiveTab('available')}
+                                            className="browse-courses-btn"
                                         >
-                                            Go to Course
+                                            <i className="fas fa-book"></i> Browse Courses
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="enrolled-courses-grid">
+                                        {enrolledCourses.map(enrollment => (
+                                            <div key={enrollment._id} className="enrolled-course-card">
+                                                <div className="enrolled-course-header">
+                                                    <h4>{enrollment.course?.title}</h4>
+                                                    <span className={`status-badge status-${enrollment.status}`}>
+                                                        {enrollment.status}
+                                                    </span>
+                                                </div>
+                                                
+                                                <p className="course-description">{enrollment.course?.description}</p>
+                                                
+                                                <div className="progress-section">
+                                                    <div className="progress-info">
+                                                        <span>Progress: {enrollment.progress}%</span>
+                                                        <span>Last accessed: {new Date(enrollment.lastAccessed).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="progress-container">
+                                                        <div className="progress-bar">
+                                                            <div 
+                                                                className="progress-fill" 
+                                                                style={{ width: `${enrollment.progress}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="course-actions">
+                                                    <button 
+                                                        onClick={() => goToCourse(enrollment.course?._id)}
+                                                        className="go-to-course-btn"
+                                                    >
+                                                        <i className="fas fa-play-circle"></i> Continue Learning
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'ai' && (
+                            <div className="ai-recommendations-section">
+                                <div className="ai-hero">
+                                    <h3>AI Course Recommendations</h3>
+                                    <p>Tell us what you want to learn, and our AI will recommend the perfect courses for you</p>
+                                </div>
+                                
+                                <div className="ai-prompt-section">
+                                    <div className="prompt-input-container">
+                                        <input
+                                            type="text"
+                                            value={aiPrompt}
+                                            onChange={(e) => setAiPrompt(e.target.value)}
+                                            placeholder="e.g., I want to be a software engineer, what courses should I follow?"
+                                            className="prompt-input"
+                                        />
+                                        <button 
+                                            onClick={getAiRecommendations}
+                                            className="get-recommendations-btn"
+                                        >
+                                            <i className="fas fa-robot"></i> Get Recommendations
                                         </button>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                )}
 
-                {activeTab === 'ai' && (
-                    <div className="ai-recommendations">
-                        <div className="ai-prompt-section">
-                            <h3>Get Course Recommendations</h3>
-                            <p>Tell us what you're interested in learning, and we'll recommend the best courses for you.</p>
-                            <div className="prompt-input">
-                                <input
-                                    type="text"
-                                    value={aiPrompt}
-                                    onChange={(e) => setAiPrompt(e.target.value)}
-                                    placeholder="e.g., I want to be a software engineer, what courses should I follow?"
-                                />
-                                <button onClick={getAiRecommendations}>Get Recommendations</button>
-                            </div>
-                        </div>
-
-                        {aiRecommendations.length > 0 && (
-                            <div className="recommendations-results">
-                                <h4>Recommended Courses</h4>
-                                <div className="recommendations-grid">
-                                    {aiRecommendations.map(rec => (
-                                        <div key={rec.courseId} className="recommendation-card">
-                                            <h5>{rec.course.title}</h5>
-                                            <p>{rec.course.description}</p>
-                                            <p className="reason">{rec.reason}</p>
-                                            <button 
-                                                onClick={() => enrollInCourse(rec.courseId)}
-                                                className="enroll-btn"
-                                            >
-                                                Enroll Now
-                                            </button>
+                                {aiRecommendations.length > 0 && (
+                                    <div className="recommendations-results">
+                                        <h4>Recommended Courses</h4>
+                                        <div className="recommendations-grid">
+                                            {aiRecommendations.map(rec => (
+                                                <div key={rec.courseId} className="recommendation-card">
+                                                    <div className="recommendation-header">
+                                                        <h5>{rec.course.title}</h5>
+                                                        <p className="reason">{rec.reason}</p>
+                                                    </div>
+                                                    <p className="course-description">{rec.course.description}</p>
+                                                    <button 
+                                                        onClick={() => enrollInCourse(rec.courseId)}
+                                                        className="enroll-btn"
+                                                    >
+                                                        <i className="fas fa-plus"></i> Enroll Now
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
+            </main>
         </div>
     );
 };
