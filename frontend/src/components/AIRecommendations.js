@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import '../stylesheets/AIRecommendations.css';
 
@@ -9,6 +9,20 @@ const AIRecommendations = ({
     getAiRecommendations, 
     enrollInCourse 
 }) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGetRecommendations = async () => {
+        setIsLoading(true);
+        try {
+            await getAiRecommendations();
+        } catch (error) {
+            // Error is already handled in getAiRecommendations
+            console.error('Error in handleGetRecommendations:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="ai-recommendations-section">
             <div className="ai-hero">
@@ -24,29 +38,45 @@ const AIRecommendations = ({
                         onChange={(e) => setAiPrompt(e.target.value)}
                         placeholder="e.g., I want to be a software engineer, what courses should I follow?"
                         className="prompt-input"
+                        disabled={isLoading}
                     />
                     <button 
-                        onClick={getAiRecommendations}
+                        onClick={handleGetRecommendations}
                         className="get-recommendations-btn"
+                        disabled={isLoading}
                     >
-                        <i className="fas fa-robot"></i> Get Recommendations
+                        {isLoading ? (
+                            <>
+                                <div className="loading-spinner-small"></div>
+                                Processing...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-robot"></i> Get Recommendations
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
 
-            {aiRecommendations.length > 0 && (
+            {isLoading ? (
+                <div className="recommendations-loading">
+                    <div className="loading-spinner"></div>
+                    <p>AI is analyzing your request and finding the best courses for you...</p>
+                </div>
+            ) : aiRecommendations.length > 0 ? (
                 <div className="recommendations-results">
                     <h4>Recommended Courses</h4>
                     <div className="recommendations-grid">
                         {aiRecommendations.map(rec => (
-                            <div key={rec.courseId} className="recommendation-card">
+                            <div key={rec.courseId || rec.course._id} className="recommendation-card">
                                 <div className="recommendation-header">
                                     <h5>{rec.course.title}</h5>
                                     <p className="reason">{rec.reason}</p>
                                 </div>
                                 <p className="course-description">{rec.course.description}</p>
                                 <button 
-                                    onClick={() => enrollInCourse(rec.courseId)}
+                                    onClick={() => enrollInCourse(rec.courseId || rec.course._id)}
                                     className="enroll-btn"
                                 >
                                     <i className="fas fa-plus"></i> Enroll Now
@@ -55,7 +85,7 @@ const AIRecommendations = ({
                         ))}
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };

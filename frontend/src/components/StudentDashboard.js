@@ -102,7 +102,7 @@ const StudentDashboard = () => {
                 text: 'Please enter a prompt to get recommendations.',
                 confirmButtonColor: '#f39c12'
             });
-            return;
+            return Promise.reject('Prompt required');
         }
 
         try {
@@ -114,7 +114,7 @@ const StudentDashboard = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setAiRecommendations(response.data.recommendations);
+            setAiRecommendations(response.data.recommendations || []);
             
             if (response.data.recommendations.length === 0) {
                 await Swal.fire({
@@ -124,6 +124,8 @@ const StudentDashboard = () => {
                     confirmButtonColor: '#3498db'
                 });
             }
+            
+            return response.data; // Return the response data
         } catch (error) {
             console.error('Error getting AI recommendations:', error);
             const errorMessage = error.response?.data?.message || error.message;
@@ -134,6 +136,8 @@ const StudentDashboard = () => {
                 text: `Error getting recommendations: ${errorMessage}`,
                 confirmButtonColor: '#e74c3c'
             });
+            
+            throw error; // Re-throw the error
         }
     };
 

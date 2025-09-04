@@ -40,6 +40,11 @@
     border-color: #3498db;
 }
 
+.prompt-input:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
 .get-recommendations-btn {
     padding: 15px 25px;
     background: #9b59b6;
@@ -54,9 +59,53 @@
     gap: 8px;
 }
 
-.get-recommendations-btn:hover {
+.get-recommendations-btn:hover:not(:disabled) {
     background: #8e44ad;
     transform: translateY(-2px);
+}
+
+.get-recommendations-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.recommendations-loading {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px dashed #e1e8ed;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #e1e8ed;
+    border-top: 5px solid #9b59b6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.loading-spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.recommendations-loading p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin: 0;
 }
 
 .recommendations-results h4 {
