@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Register from './components/Register';
 import StudentDashboard from './components/StudentDashboard';
@@ -13,6 +14,7 @@ function App() {
         <Router>
             <div className="App">
                 <Routes>
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/student-dashboard" element={
@@ -31,7 +33,6 @@ function App() {
                         </ProtectedRoute>
                     } />
                     <Route path="/unauthorized" element={<Unauthorized />} />
-                    <Route path="/" element={<Login />} />
                 </Routes>
             </div>
         </Router>
