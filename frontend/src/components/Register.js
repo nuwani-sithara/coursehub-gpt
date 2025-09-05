@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../stylesheets/Auth.css';
+import Logo from './Logo';
+import Footer from "./Footer";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -142,48 +144,46 @@ const Register = () => {
     };
 
     return (
-        <div className="auth-container">
+        <><div className="auth-container">
             <div className="auth-card">
+                <Logo />
                 <h2 className="auth-title">Create Your Account</h2>
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label htmlFor="name">Full Name</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             id="name"
-                            name="name" 
-                            value={formData.name} 
-                            onChange={handleChange} 
-                            placeholder="Enter your full name" 
-                            required 
-                        />
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder="Enter your full name"
+                            required />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="email">Email Address</label>
-                        <input 
-                            type="email" 
+                        <input
+                            type="email"
                             id="email"
-                            name="email" 
-                            value={formData.email} 
-                            onChange={handleChange} 
-                            placeholder="Enter your email" 
-                            required 
-                        />
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="Enter your email"
+                            required />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="username">Username</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             id="username"
-                            name="username" 
-                            value={formData.username} 
-                            onChange={handleChange} 
-                            placeholder="Choose a username" 
-                            required 
-                        />
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            placeholder="Choose a username"
+                            required />
                         <div className="input-help">
                             4-20 characters, letters, numbers, and underscores only
                         </div>
@@ -191,15 +191,14 @@ const Register = () => {
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <input 
-                            type="password" 
+                        <input
+                            type="password"
                             id="password"
-                            name="password" 
-                            value={formData.password} 
-                            onChange={handleChange} 
-                            placeholder="Create a password" 
-                            required 
-                        />
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Create a password"
+                            required />
                         <div className="input-help">
                             Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
                         </div>
@@ -207,12 +206,12 @@ const Register = () => {
 
                     <div className="form-group">
                         <label htmlFor="role">I want to join as</label>
-                        <select 
+                        <select
                             id="role"
-                            name="role" 
-                            value={formData.role} 
-                            onChange={handleChange} 
-                            required 
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            required
                         >
                             <option value="">Select Role</option>
                             <option value="student">Student</option>
@@ -220,8 +219,8 @@ const Register = () => {
                         </select>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={isSubmitting}
                         className="auth-button"
                     >
@@ -234,7 +233,8 @@ const Register = () => {
                     <p><Link to="/" className="auth-link">← Back to Home</Link></p>
                 </div>
             </div>
-        </div>
+
+        </div><Footer /></>
     );
 };
 

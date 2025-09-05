@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../stylesheets/LandingPage.css';
+import Logo from './Logo';
 // import image from '../assets/coursehub-logo.png';
 
 const LandingPage = () => {
@@ -49,6 +50,7 @@ const LandingPage = () => {
                         </div>
                         <div className="hero-image">
                             <div className="placeholder-image">
+                                {/* <Logo /> */}
                                 <i className="fas fa-graduation-cap"></i>
                                 {/* <img src={image} alt="Learning Illustration" /> */}
                             </div>
@@ -94,6 +96,7 @@ const LandingPage = () => {
 
                 <section className="cta-section">
                     <div className="container">
+                        <Logo />
                         <h2>Ready to Start Your Learning Journey?</h2>
                         <p>Join our community of learners and instructors today.</p>
                         <div className="cta-buttons">

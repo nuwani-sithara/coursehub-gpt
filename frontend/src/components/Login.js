@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../stylesheets/Auth.css';
+import Logo from './Logo';
+import Footer from "./Footer";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -119,39 +121,38 @@ const Login = () => {
     };
 
     return (
-        <div className="auth-container">
+        <><div className="auth-container">
             <div className="auth-card">
+                <Logo />
                 <h2 className="auth-title">Login to Your Account</h2>
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
                         <label htmlFor="username">Username</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             id="username"
-                            name="username" 
-                            value={formData.username} 
-                            onChange={handleChange} 
-                            placeholder="Enter your username" 
-                            required 
-                        />
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            placeholder="Enter your username"
+                            required />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <input 
-                            type="password" 
+                        <input
+                            type="password"
                             id="password"
-                            name="password" 
-                            value={formData.password} 
-                            onChange={handleChange} 
-                            placeholder="Enter your password" 
-                            required 
-                        />
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Enter your password"
+                            required />
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={isSubmitting}
                         className="auth-button"
                     >
@@ -164,7 +165,7 @@ const Login = () => {
                     <p><Link to="/" className="auth-link">← Back to Home</Link></p>
                 </div>
             </div>
-        </div>
+        </div><Footer /></>
     );
 };
 
