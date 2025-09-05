@@ -1,20 +1,23 @@
 const { OpenAI } = require('openai');
 const { HfInference } = require('@huggingface/inference');
 const { CohereClient } = require('cohere-ai');
+const http = require('http');
 const Course = require('../models/course');
 const Enrollment = require('../models/enrollment');
 
 // Initialize AI clients with better error handling
-let openai, hf, cohere;
+let openai, hf, cohere, ollama, detectedOllamaModel;
 let apiStatus = {
     openai: { available: false, error: null },
     huggingface: { available: false, error: null },
-    cohere: { available: false, error: null }
+    cohere: { available: false, error: null },
+    ollama: { available: false, error: null, model: null }
 };
 
 // Request tracking
 let requestCount = {
     openai: 0,
+    ollama: 0,
     huggingface: 0,
     cohere: 0,
     keyword: 0,
@@ -28,7 +31,7 @@ const MAX_REQUESTS = 250;
 if (process.env.OPENAI_API_KEY) {
     try {
         openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
+            apiKey: process.env.OPENAI_API_KEY
         });
         apiStatus.openai.available = true;
         console.log('OpenAI: Configured successfully');
@@ -73,6 +76,111 @@ if (process.env.COHERE_API_KEY) {
     console.log('Cohere: API key not provided');
 }
 
+// Initialize Ollama with auto-detection
+(async () => {
+    if (process.env.OLLAMA_HOST) {
+        try {
+            const modelsResponse = await new Promise((resolve, reject) => {
+                const req = http.get(`${process.env.OLLAMA_HOST}/api/tags`, res => {
+                    if (res.statusCode < 200 || res.statusCode >= 300) {
+                        res.resume(); // Consume response data to free up memory
+                        return reject(new Error(`Ollama API check failed with status ${res.statusCode}`));
+                    }
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        try {
+                            resolve(JSON.parse(data));
+                        } catch (e) {
+                            reject(new Error('Failed to parse Ollama response.'));
+                        }
+                    });
+                });
+                req.on('error', err => reject(new Error(`Failed to connect to Ollama: ${err.message}`)));
+            });
+
+            if (!modelsResponse.models || modelsResponse.models.length === 0) {
+                throw new Error('No models found on the Ollama server.');
+            }
+
+            const availableModels = modelsResponse.models.map(m => m.name);
+            const preferredModel = process.env.OLLAMA_MODEL;
+
+            if (preferredModel && availableModels.includes(preferredModel)) {
+                detectedOllamaModel = preferredModel;
+            } else {
+                const llama3Model = availableModels.find(m => m.includes('llama3'));
+                detectedOllamaModel = llama3Model || availableModels[0];
+            }
+
+            ollama = new OpenAI({
+                baseURL: `${process.env.OLLAMA_HOST}/v1`, // The OpenAI client needs the /v1 path
+                apiKey: 'ollama', // Required by the SDK, but not used by Ollama
+            });
+            apiStatus.ollama.available = true;
+            apiStatus.ollama.model = detectedOllamaModel;
+            console.log(`Ollama: ✅ Configured successfully with model ${detectedOllamaModel}`);
+        } catch (error) {
+            apiStatus.ollama.available = false;
+            apiStatus.ollama.error = error.message;
+            console.log('Ollama: ❌ Configuration failed -', error.message);
+        }
+    } else {
+        console.log('Ollama: ❌ OLLAMA_HOST not provided in .env. Skipping Ollama initialization.');
+    }
+})();
+
+// Helper to generate a standardized prompt for chat-based models
+function generateStandardPrompt(prompt, coursesContext, maxCourses) {
+    return `
+You are a course recommendation assistant for an online learning platform.
+
+Available courses:
+${JSON.stringify(coursesContext, null, 2)}
+
+User query: "${prompt}"
+
+Based on the user's query and the available courses above, recommend the most relevant courses.
+Consider the course category, level, description, and how well they match the user's needs.
+
+Return your response as a JSON object with this structure:
+{
+  "recommendations": [
+    {
+      "courseId": "course_id_1",
+      "reason": "Brief explanation why this course is recommended"
+    }
+  ],
+  "summary": "Brief overall summary of recommendations"
+}
+
+Recommend maximum ${maxCourses} courses. Only recommend courses that actually exist in the available courses list.
+Return only valid JSON without any additional text.
+    `;
+}
+
+// Helper to parse JSON from AI responses, cleaning up markdown and other text
+function parseAIResponse(responseText, providerName) {
+    if (!responseText) {
+        throw new Error(`Received empty response from ${providerName}`);
+    }
+    // Clean the response - remove markdown code blocks and trim whitespace
+    const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/) || cleanedText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+        throw new Error(`No JSON found in ${providerName} response`);
+    }
+
+    try {
+        const result = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(result)) return result;
+        if (result.recommendations && Array.isArray(result.recommendations)) return result.recommendations;
+        return []; // Return empty array if no recommendations found
+    } catch (parseError) {
+        throw new Error(`Could not parse recommendations from ${providerName} response: ${parseError.message}`);
+    }
+}
+
 // Check request limit
 function checkRequestLimit() {
     if (requestCount.total >= MAX_REQUESTS) {
@@ -80,6 +188,14 @@ function checkRequestLimit() {
     }
     requestCount.total++;
 }
+
+// Define AI provider chain
+const recommendationProviders = [
+    { name: 'OpenAI', func: getOpenAIRecommendations, status: apiStatus.openai, counter: 'openai' },
+    { name: 'Ollama', func: getOllamaRecommendations, status: apiStatus.ollama, counter: 'ollama' },
+    { name: 'Hugging Face', func: getHuggingFaceRecommendations, status: apiStatus.huggingface, counter: 'huggingface' },
+    { name: 'Cohere', func: getCohereRecommendations, status: apiStatus.cohere, counter: 'cohere' }
+];
 
 // Get API status
 exports.getAIStatus = async (req, res) => {
@@ -138,48 +254,32 @@ exports.getCourseRecommendations = async (req, res) => {
         console.log(`Sending ${coursesContext.length} courses for recommendations`);
 
         let recommendations;
-        let aiProvider = 'OpenAI';
+        let aiProvider = '';
         let providerUsed = '';
 
-        // Try OpenAI
-        if (apiStatus.openai.available) {
-            try {
-                recommendations = await getOpenAIRecommendations(prompt, coursesContext, maxCourses);
-                aiProvider = 'OpenAI';
-                providerUsed = 'openai';
-                requestCount.openai++;
-            } catch (openaiError) {
-                console.log('OpenAI failed:', openaiError.message);
-            }
-        }
-
-        // Try Hugging Face if OpenAI failed or not available
-        if (!recommendations && apiStatus.huggingface.available) {
-            try {
-                recommendations = await getHuggingFaceRecommendations(prompt, coursesContext, maxCourses);
-                aiProvider = 'Hugging Face';
-                providerUsed = 'huggingface';
-                requestCount.huggingface++;
-            } catch (hfError) {
-                console.log('Hugging Face failed:', hfError.message);
-                // Continue to next provider
-            }
-        }
-
-        // Try Cohere if previous providers failed or not available
-        if (!recommendations && apiStatus.cohere.available) {
-            try {
-                recommendations = await getCohereRecommendations(prompt, coursesContext, maxCourses);
-                aiProvider = 'Cohere';
-                providerUsed = 'cohere';
-                requestCount.cohere++;
-            } catch (cohereError) {
-                console.log('Cohere failed:', cohereError.message);
+        // Iterate through AI providers until a successful recommendation is made
+        for (const provider of recommendationProviders) {
+            if (provider.status.available) {
+                try {
+                    console.log(`Trying provider: ${provider.name}`);
+                    const result = await provider.func(prompt, coursesContext, maxCourses);
+                    if (result && result.length > 0) {
+                        recommendations = result;
+                        aiProvider = provider.name;
+                        providerUsed = provider.counter;
+                        requestCount[provider.counter]++;
+                        console.log(`Successfully got recommendations from ${provider.name}`);
+                        break; // Exit loop on success
+                    }
+                } catch (error) {
+                    console.log(`${provider.name} failed:`, error.message); // Continue to next provider
+                }
             }
         }
 
         // Final fallback: enhanced keyword matching
         if (!recommendations || recommendations.length === 0) {
+            console.log('All AI providers failed or returned no results. Falling back to keyword matching.');
             recommendations = getEnhancedKeywordRecommendations(prompt, allCourses, maxCourses);
             aiProvider = 'Enhanced Keyword Matching';
             providerUsed = 'keyword';
@@ -223,31 +323,7 @@ async function getOpenAIRecommendations(prompt, coursesContext, maxCourses) {
         throw new Error('OpenAI client not initialized');
     }
 
-    const gptPrompt = `
-You are a course recommendation assistant for an online learning platform.
-
-Available courses:
-${JSON.stringify(coursesContext, null, 2)}
-
-User query: "${prompt}"
-
-Based on the user's query and the available courses above, recommend the most relevant courses.
-Consider the course category, level, description, and how well they match the user's needs.
-
-Return your response as a JSON object with this structure:
-{
-  "recommendations": [
-    {
-      "courseId": "course_id_1",
-      "reason": "Brief explanation why this course is recommended"
-    }
-  ],
-  "summary": "Brief overall summary of recommendations"
-}
-
-Recommend maximum ${maxCourses} courses. Only recommend courses that actually exist in the available courses list.
-Return only valid JSON without any additional text.
-    `;
+    const gptPrompt = generateStandardPrompt(prompt, coursesContext, maxCourses);
 
     try {
         const completion = await openai.chat.completions.create({
@@ -270,21 +346,48 @@ Return only valid JSON without any additional text.
         const gptResponse = completion.choices[0].message.content;
         console.log('OpenAI raw response:', gptResponse);
 
-        // Clean the response - remove any non-JSON text
-        const jsonMatch = gptResponse.match(/\{[\s\S]*\}/) || gptResponse.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-            throw new Error('No JSON found in OpenAI response');
-        }
-
-        const result = JSON.parse(jsonMatch[0]);
-        return result.recommendations || [];
-
+        return parseAIResponse(gptResponse, 'OpenAI');
     } catch (error) {
         console.error('OpenAI API error:', error.message);
         if (error.response) {
             console.error('OpenAI API response error:', error.response.status, error.response.data);
         }
         throw new Error(`OpenAI failed: ${error.message}`);
+    }
+}
+
+// Ollama recommendation function
+async function getOllamaRecommendations(prompt, coursesContext, maxCourses) {
+    if (!ollama) {
+        throw new Error('Ollama client not initialized');
+    }
+
+    const ollamaPrompt = generateStandardPrompt(prompt, coursesContext, maxCourses);
+
+    try {
+        const completion = await ollama.chat.completions.create({
+            model: detectedOllamaModel,
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a helpful course recommendation assistant. Always respond with valid JSON only, no additional text."
+                },
+                {
+                    role: "user",
+                    content: ollamaPrompt
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+        });
+
+        const ollamaResponse = completion.choices[0].message.content;
+        console.log('Ollama raw response:', ollamaResponse);
+
+        return parseAIResponse(ollamaResponse, 'Ollama');
+    } catch (error) {
+        console.error('Ollama API error:', error.message);
+        throw new Error(`Ollama failed: ${error.message}`);
     }
 }
 
@@ -325,24 +428,12 @@ Maximum ${maxCourses} courses. Only recommend courses that exist in the availabl
         console.log('Hugging Face raw response:', response);
 
         const responseText = response.generated_text || '';
-        let recommendations = [];
-
-        // Try to extract JSON from response
         try {
-            const jsonMatch = responseText.match(/\[[\s\S]*\]/) || responseText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                recommendations = JSON.parse(jsonMatch[0]);
-                // Handle both array and object formats
-                if (Array.isArray(recommendations)) {
-                    return recommendations.slice(0, maxCourses);
-                } else if (recommendations.recommendations && Array.isArray(recommendations.recommendations)) {
-                    return recommendations.recommendations.slice(0, maxCourses);
-                }
-            }
+            const recommendations = parseAIResponse(responseText, 'Hugging Face');
+            return recommendations.slice(0, maxCourses);
         } catch (parseError) {
-            console.log('Failed to parse Hugging Face response JSON:', parseError.message);
+            console.log(parseError.message);
         }
-
         // If JSON parsing failed, try to extract course IDs
         const idRegex = /["']([a-f0-9]{24})["']/g;
         let match;
@@ -398,31 +489,18 @@ Maximum ${maxCourses} courses. Only recommend courses that exist in the availabl
             temperature: 0.5,
             k: 0,
             p: 0.75,
-            stopSequences: ['}'],
-
+            stopSequences: [], // Let the model complete the JSON
         });
 
         console.log('Cohere raw response:', response);
 
         const responseText = response.generations[0].text;
-        let recommendations = [];
-
-        // Try to extract JSON from response
         try {
-            const jsonMatch = responseText.match(/\[[\s\S]*\]/) || responseText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                recommendations = JSON.parse(jsonMatch[0]);
-                // Handle both array and object formats
-                if (Array.isArray(recommendations)) {
-                    return recommendations.slice(0, maxCourses);
-                } else if (recommendations.recommendations && Array.isArray(recommendations.recommendations)) {
-                    return recommendations.recommendations.slice(0, maxCourses);
-                }
-            }
+            const recommendations = parseAIResponse(responseText, 'Cohere');
+            return recommendations.slice(0, maxCourses);
         } catch (parseError) {
-            console.log('Failed to parse Cohere response JSON:', parseError.message);
+            console.log(parseError.message);
         }
-
         // If JSON parsing failed, try to extract course IDs
         const idRegex = /["']([a-f0-9]{24})["']/g;
         let match;
@@ -611,48 +689,40 @@ exports.getPersonalizedRecommendations = async (req, res) => {
     };
 
     let recommendations;
-    let aiProvider = 'OpenAI';
+    let aiProvider = '';
+    const enrolledCourseIds = new Set(userEnrollments.map(e => e.course._id.toString()));
+    const prompt = `User has enrolled in these courses: ${JSON.stringify(userContext.enrolledCourses)}. Suggest complementary courses.`;
 
-    try {
-      // Try to get AI-based recommendations
-      const prompt = `User has enrolled in these courses: ${JSON.stringify(userContext.enrolledCourses)}. Suggest complementary courses.`;
-      recommendations = await getOpenAIRecommendations(prompt, userContext.availableCourses, maxCourses);
-      aiProvider = 'OpenAI';
-    } catch (openaiError) {
-      console.log('OpenAI failed for personalized recommendations:', openaiError.message);
-      
-      try {
-        recommendations = await getHuggingFaceRecommendations(
-          "Suggest courses based on user's learning history", 
-          userContext.availableCourses, 
-          maxCourses
-        );
-        aiProvider = 'Hugging Face';
-      } catch (hfError) {
-        console.log('Hugging Face failed, trying Cohere:', hfError.message);
-        
-        try {
-          recommendations = await getCohereRecommendations(
-            "Suggest courses based on user's learning history", 
-            userContext.availableCourses, 
-            maxCourses
-          );
-          aiProvider = 'Cohere';
-        } catch (cohereError) {
-          console.log('All AI providers failed, using category-based matching:', cohereError.message);
-          
-          // Fallback: recommend courses in similar categories
-          const userCategories = [...new Set(userContext.enrolledCourses.map(ec => ec.category))];
-          recommendations = allCourses
-            .filter(course => userCategories.includes(course.category))
+    // Iterate through AI providers for personalized recommendations
+    for (const provider of recommendationProviders) {
+        if (provider.status.available) {
+            try {
+                console.log(`Trying personalized recommendations with: ${provider.name}`);
+                const result = await provider.func(prompt, userContext.availableCourses, maxCourses);
+                if (result && result.length > 0) {
+                    recommendations = result;
+                    aiProvider = provider.name;
+                    console.log(`Successfully got personalized recommendations from ${provider.name}`);
+                    break; // Exit loop on success
+                }
+            } catch (error) {
+                console.log(`Personalized recommendations with ${provider.name} failed:`, error.message);
+            }
+        }
+    }
+
+    // Fallback: recommend courses in similar categories, excluding already enrolled ones
+    if (!recommendations || recommendations.length === 0) {
+        console.log('All AI providers failed for personalized recommendations, using category-based matching.');
+        const userCategories = [...new Set(userContext.enrolledCourses.map(ec => ec.category))];
+        recommendations = allCourses
+            .filter(course => userCategories.includes(course.category) && !enrolledCourseIds.has(course._id.toString()))
             .slice(0, maxCourses)
             .map(course => ({
-              courseId: course._id.toString(),
-              reason: `Similar to your interests in ${course.category}`
+                courseId: course._id.toString(),
+                reason: `Similar to your interests in ${course.category}`
             }));
-          aiProvider = 'Category Matching';
-        }
-      }
+        aiProvider = 'Category Matching';
     }
 
     // Enrich with course data
@@ -677,6 +747,7 @@ exports.resetRequestCount = async (req, res) => {
     if (process.env.NODE_ENV !== 'production') {
         requestCount = {
             openai: 0,
+            ollama: 0,
             huggingface: 0,
             cohere: 0,
             keyword: 0,
@@ -784,14 +855,7 @@ Return only valid JSON without any additional text.
             gptResponseRaw = completion.choices[0].message.content;
             console.log('GPT Raw Response:', gptResponseRaw);
 
-            // Clean the response - remove any non-JSON text
-            const jsonMatch = gptResponseRaw.match(/\{[\s\S]*\}/) || gptResponseRaw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                throw new Error('No JSON found in GPT response');
-            }
-
-            const result = JSON.parse(jsonMatch[0]);
-            recommendations = result.recommendations || [];
+            recommendations = parseAIResponse(gptResponseRaw, 'GPT Test');
             requestCount.openai++;
 
         } catch (gptError) {
