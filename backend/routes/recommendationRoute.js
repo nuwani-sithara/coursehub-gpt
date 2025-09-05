@@ -10,4 +10,11 @@ router.post('/recommend', recommendationLimiter, recommendationController.getCou
 // Protected route for personalized recommendations based on user history
 router.post('/recommend/personalized', authMiddleware, recommendationLimiter, recommendationController.getPersonalizedRecommendations);
 
+// In your routes file, add these new routes:
+router.get('/ai-status', recommendationController.getAIStatus);
+router.post('/reset-requests', recommendationController.resetRequestCount); // For testing only
+
+router.post('/test-gpt', recommendationController.testGPT);
+router.get('/test-gpt-connectivity', recommendationController.testGPTConnectivity);
+
 module.exports = router;

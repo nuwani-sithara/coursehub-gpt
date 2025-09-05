@@ -5,7 +5,7 @@ const Logo = () => {
     return (
         <div className="auth-logo">
             <img 
-                src="/coursehub-logo.png" 
+                src="/logo-new.png" 
                 alt="CourseHub-GPT Logo" 
                 className="logo-image"
             />
