@@ -9,7 +9,7 @@
 
 .auth-card {
     background: white;
-    padding: 40px;
+    padding: 60px;
     border-radius: 10px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     width: 100%;
@@ -26,12 +26,14 @@
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 5px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
+    margin-right: 20px;
+    margin-left: -10px;
 }
 
 .form-group label {
@@ -72,6 +74,8 @@
     cursor: pointer;
     transition: background 0.3s;
     margin-top: 10px;
+    margin-right: -10px;
+    margin-left: -10px;
 }
 
 .auth-button:hover:not(:disabled) {
