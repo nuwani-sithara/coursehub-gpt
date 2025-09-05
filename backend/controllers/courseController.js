@@ -1,5 +1,6 @@
 const Course = require('../models/course');
 const User = require('../models/user');
+const { cloudinary } = require('../config/cloudinary');
 
 // Create a new course (Instructor only)
 exports.createCourse = async (req, res) => {
@@ -16,17 +17,28 @@ exports.createCourse = async (req, res) => {
       return res.status(400).json({ message: 'Title, description, content, and category are required' });
     }
 
-    // Create course
-    const course = new Course({
+    // Create course with optional image
+    const courseData = {
       title,
       description,
       content,
       category,
       duration,
-      level: level || 'beginner',
+      level: level || 'Beginner',
       instructor: req.user.id
-    });
+    };
 
+    // Add thumbnail if uploaded
+    if (req.files && req.files.thumbnail) {
+      courseData.thumbnail = req.files.thumbnail[0].path;
+    }
+
+    // Add featured image if uploaded
+    if (req.files && req.files.featuredImage) {
+      courseData.featuredImage = req.files.featuredImage[0].path;
+    }
+
+    const course = new Course(courseData);
     await course.save();
 
     // Add course to instructor's createdCourses
@@ -59,12 +71,27 @@ exports.getAllCourses = async (req, res) => {
 // Get course by ID
 exports.getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id)
+    let course = await Course.findById(req.params.id)
       .populate('instructor', 'name email username')
       .populate('students', 'name username');
     
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // Handle the typo during transition
+    if (course.attachements && !course.attachments) {
+      course.attachments = course.attachements;
+      delete course.attachements;
+      
+      // Save the corrected document
+      await Course.findByIdAndUpdate(
+        req.params.id,
+        { 
+          $set: { attachments: course.attachments },
+          $unset: { attachements: "" }
+        }
+      );
     }
     
     res.status(200).json(course);
@@ -88,9 +115,31 @@ exports.updateCourse = async (req, res) => {
       return res.status(403).json({ message: 'Only the course instructor can update this course' });
     }
 
+    const updateData = { ...req.body };
+
+    // Handle thumbnail update
+    if (req.files && req.files.thumbnail) {
+      // Delete old thumbnail if exists
+      if (course.thumbnail) {
+        const publicId = course.thumbnail.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`coursehub/courses/images/${publicId}`);
+      }
+      updateData.thumbnail = req.files.thumbnail[0].path;
+    }
+
+    // Handle featured image update
+    if (req.files && req.files.featuredImage) {
+      // Delete old featured image if exists
+      if (course.featuredImage) {
+        const publicId = course.featuredImage.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`coursehub/courses/images/${publicId}`);
+      }
+      updateData.featuredImage = req.files.featuredImage[0].path;
+    }
+
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -115,6 +164,27 @@ exports.deleteCourse = async (req, res) => {
       return res.status(403).json({ message: 'Only the course instructor can delete this course' });
     }
 
+    // Delete images from Cloudinary
+    if (course.thumbnail) {
+      const thumbnailPublicId = course.thumbnail.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(`coursehub/courses/images/${thumbnailPublicId}`);
+    }
+
+    if (course.featuredImage) {
+      const featuredImagePublicId = course.featuredImage.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(`coursehub/courses/images/${featuredImagePublicId}`);
+    }
+
+    // Delete attachments from Cloudinary
+    if (course.attachments && course.attachments.length > 0) {
+      for (const attachment of course.attachments) {
+        const filePublicId = attachment.url.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`coursehub/courses/files/${filePublicId}`, {
+          resource_type: 'raw'
+        });
+      }
+    }
+
     await Course.findByIdAndDelete(req.params.id);
 
     // Remove course from instructor's createdCourses
@@ -130,41 +200,86 @@ exports.deleteCourse = async (req, res) => {
   }
 };
 
-// Enroll in a course (Student only)
-// exports.enrollInCourse = async (req, res) => {
-//   try {
-//     // Check if user is a student
-//     if (req.user.role !== 'student') {
-//       return res.status(403).json({ message: 'Only students can enroll in courses' });
-//     }
-
-//     const course = await Course.findById(req.params.id);
+exports.addAttachment = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
     
-//     if (!course) {
-//       return res.status(404).json({ message: 'Course not found' });
-//     }
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
 
-//     // Check if already enrolled
-//     if (course.students.includes(req.user.id)) {
-//       return res.status(400).json({ message: 'Already enrolled in this course' });
-//     }
+    // Check if user is the course instructor
+    if (course.instructor.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the course instructor can add attachments' });
+    }
 
-//     // Add student to course
-//     course.students.push(req.user.id);
-//     await course.save();
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
-//     // Add course to student's enrolledCourses
-//     await User.findByIdAndUpdate(
-//       req.user.id,
-//       { $push: { enrolledCourses: req.params.id } }
-//     );
+    const attachment = {
+      filename: req.file.originalname,
+      originalName: req.file.originalname,
+      url: req.file.path,
+      fileType: req.file.mimetype
+    };
 
-//     res.status(200).json({ message: 'Enrolled in course successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
+    // Ensure attachments array exists (handle the typo during transition)
+    if (!course.attachments) {
+      // Check if the old field name exists
+      if (course.attachements) {
+        course.attachments = course.attachements;
+        delete course.attachements;
+      } else {
+        course.attachments = [];
+      }
+    }
+
+    course.attachments.push(attachment);
+    await course.save();
+
+    res.status(200).json({ message: 'Attachment added successfully', attachment });
+  } catch (error) {
+    console.error('Attachment upload error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Remove attachment from course
+exports.removeAttachment = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if user is the course instructor
+    if (course.instructor.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the course instructor can remove attachments' });
+    }
+
+    const attachment = course.attachments.id(req.params.attachmentId);
+    if (!attachment) {
+      return res.status(404).json({ message: 'Attachment not found' });
+    }
+
+    // Delete file from Cloudinary
+    const filePublicId = attachment.url.split('/').pop().split('.')[0];
+    await cloudinary.uploader.destroy(`coursehub/courses/files/${filePublicId}`, {
+      resource_type: 'raw'
+    });
+
+    // Remove attachment from array
+    course.attachments.pull(req.params.attachmentId);
+    await course.save();
+
+    res.status(200).json({ message: 'Attachment removed successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 // Get courses by instructor
 exports.getCoursesByInstructor = async (req, res) => {

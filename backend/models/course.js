@@ -38,7 +38,25 @@ const courseSchema = new mongoose.Schema({
   isPublished: {
     type: Boolean,
     default: false
+  },
+  thumbnail: {
+    type: String,
+    default: ''
+  },
+  featuredImage: {
+    type: String,
+    default: ''
+  },
+  attachments: [{
+  filename: String,
+  originalName: String,
+  url: String,
+  fileType: String,
+  uploadedAt: {
+    type: Date,
+    default: Date.now
   }
+}]
 }, {
   timestamps: true
 });
