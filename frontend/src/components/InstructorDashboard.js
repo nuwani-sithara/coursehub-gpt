@@ -482,7 +482,7 @@ const InstructorDashboard = () => {
                 <div className="container">
                     <h1 className="instructor-logo">CourseHub-GPT Instructor</h1>
                     <div className="instructor-user-info">
-                        <span>Welcome, {user?.name}</span>
+                        <span>Welcome! {user?.username}</span>
                         <button onClick={logout} className="instructor-logout-btn">
                             <i className="fas fa-sign-out-alt"></i> Logout
                         </button>

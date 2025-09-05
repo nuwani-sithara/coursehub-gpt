@@ -37,7 +37,7 @@ const StudentNavbar = ({ user }) => {
             <div className="container">
                 <h1 className="student-logo">CourseHub-GPT Student</h1>
                 <div className="student-user-info">
-                    <span>Welcome, {user?.name}</span>
+                    <span>Welcome! {user?.username}</span>
                     <button onClick={logout} className="student-logout-btn">
                         <i className="fas fa-sign-out-alt"></i> Logout
                     </button>
