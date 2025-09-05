@@ -559,11 +559,26 @@
     display: flex;
     align-items: center;
     gap: 5px;
+    font-size: 0.9rem;
 }
 
 .download-attachment-btn:hover {
     background: #219653;
     transform: translateY(-1px);
+}
+
+.download-text {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .download-text {
+        display: none;
+    }
+    
+    .download-attachment-btn {
+        padding: 8px;
+    }
 }
 
 /* Responsive adjustments for attachments */

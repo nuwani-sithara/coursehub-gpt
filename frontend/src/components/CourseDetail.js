@@ -176,14 +176,143 @@ const CourseDetail = () => {
         }
     };
 
-    const downloadFile = (url, filename) => {
+    const downloadFile = async (url, filename) => {
+    try {
+        Swal.fire({
+            title: 'Preparing Download',
+            text: `Preparing ${filename} for download...`,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        let downloadUrl = url;
+        
+        // Enhanced Cloudinary URL handling
+        if (url.includes('res.cloudinary.com')) {
+            const urlObj = new URL(url);
+            const pathParts = urlObj.pathname.split('/');
+            
+            // Check if it's an image or raw file
+            const isImage = pathParts.includes('image');
+            const isRaw = pathParts.includes('raw');
+            
+            if (isImage) {
+                // For images, add fl_attachment parameter
+                const uploadIndex = pathParts.indexOf('upload');
+                if (uploadIndex !== -1) {
+                    pathParts.splice(uploadIndex + 1, 0, 'fl_attachment');
+                    urlObj.pathname = pathParts.join('/');
+                    downloadUrl = urlObj.toString();
+                }
+            } else if (isRaw) {
+                // For raw files, add flags=attachment parameter
+                urlObj.searchParams.set('flags', 'attachment');
+                downloadUrl = urlObj.toString();
+            }
+        }
+
+        // Use fetch with authentication if needed
+        const token = localStorage.getItem('token');
+        const headers = {};
+        
+        // Only add Authorization header if it's your own API endpoint
+        if (downloadUrl.includes(process.env.REACT_APP_BACKEND_URL)) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(downloadUrl, { headers });
+        
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        
+        // Check if blob is valid
+        if (blob.size === 0) {
+            throw new Error('Empty file received');
+        }
+
+        // Create download link
+        const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
+        link.href = blobUrl;
         link.download = filename;
+        
+        // Add additional attributes for better compatibility
+        link.style.display = 'none';
+        link.setAttribute('download', filename);
+        link.setAttribute('target', '_blank');
+        
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-    };
+        
+        // Clean up
+        setTimeout(() => {
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(link);
+        }, 100);
+
+        Swal.close();
+        await Swal.fire({
+            icon: 'success',
+            title: 'Download Complete',
+            text: `${filename} has been downloaded successfully`,
+            confirmButtonColor: '#27ae60',
+            timer: 2000
+        });
+
+    } catch (error) {
+        console.error('Download error:', error);
+        Swal.close();
+        
+        // Multiple fallback strategies
+        try {
+            // Strategy 1: Direct download with Cloudinary flags
+            let fallbackUrl = url;
+            if (url.includes('cloudinary.com')) {
+                if (url.includes('/image/upload/')) {
+                    fallbackUrl = url.replace('/image/upload/', '/image/upload/fl_attachment/');
+                } else if (url.includes('/raw/upload/')) {
+                    const separator = url.includes('?') ? '&' : '?';
+                    fallbackUrl = url + separator + 'flags=attachment';
+                }
+            }
+            
+            // Strategy 2: Open in new tab with download attribute
+            const link = document.createElement('a');
+            link.href = fallbackUrl;
+            link.download = filename;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            await Swal.fire({
+                icon: 'info',
+                title: 'Download Started',
+                text: `The download should start shortly. If not, check your browser's download window.`,
+                confirmButtonColor: '#3498db'
+            });
+            
+        } catch (fallbackError) {
+            console.error('Fallback download error:', fallbackError);
+            
+            // Final fallback: just open the URL
+            window.open(url, '_blank');
+            
+            await Swal.fire({
+                icon: 'info',
+                title: 'File Opening',
+                text: `The file ${filename} is opening in a new tab. Please use "Save As" from your browser.`,
+                confirmButtonColor: '#3498db'
+            });
+        }
+    }
+};
 
     const getFileIcon = (fileType) => {
         if (fileType.includes('pdf')) return 'fas fa-file-pdf';
@@ -390,9 +519,10 @@ const CourseDetail = () => {
                                                 <button 
                                                     onClick={() => downloadFile(attachment.url, attachment.filename || attachment.originalName)}
                                                     className="download-attachment-btn"
-                                                    title="Download attachment"
+                                                    title={`Download ${attachment.filename || attachment.originalName}`}
                                                 >
                                                     <i className="fas fa-download"></i>
+                                                    <span className="download-text">Download</span>
                                                 </button>
                                             </div>
                                         ))}
