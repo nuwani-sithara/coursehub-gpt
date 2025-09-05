@@ -58,7 +58,7 @@ exports.getCourseRecommendations = async (req, res) => {
       category: course.category,
       level: course.level,
       duration: course.duration,
-      price: course.price,
+      // price: course.price,
       instructor: course.instructor?.name || 'Unknown Instructor'
     }));
 
