@@ -175,7 +175,6 @@ exports.getCourseRecommendations = async (req, res) => {
                 requestCount.cohere++;
             } catch (cohereError) {
                 console.log('Cohere failed:', cohereError.message);
-                // Continue to fallback
             }
         }
 
