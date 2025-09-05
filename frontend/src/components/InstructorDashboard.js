@@ -22,6 +22,10 @@ const InstructorDashboard = () => {
         duration: '',
         level: 'Beginner'
     });
+    const [thumbnailFile, setThumbnailFile] = useState(null);
+    const [featuredImageFile, setFeaturedImageFile] = useState(null);
+    const [attachmentFile, setAttachmentFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         fetchUserData();
@@ -88,12 +92,34 @@ const InstructorDashboard = () => {
 
     const handleCreateCourse = async (e) => {
         e.preventDefault();
+        setUploading(true);
+        
         try {
             const token = localStorage.getItem('token');
-            await axios.post(
+            const formDataToSend = new FormData();
+            
+            // Add text fields
+            Object.keys(formData).forEach(key => {
+                formDataToSend.append(key, formData[key]);
+            });
+            
+            // Add files if they exist
+            if (thumbnailFile) {
+                formDataToSend.append('thumbnail', thumbnailFile);
+            }
+            if (featuredImageFile) {
+                formDataToSend.append('featuredImage', featuredImageFile);
+            }
+            
+            const response = await axios.post(
                 `${process.env.REACT_APP_BACKEND_URL}/courses/create-course`,
-                formData,
-                { headers: { Authorization: `Bearer ${token}` } }
+                formDataToSend,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    } 
+                }
             );
             
             await Swal.fire({
@@ -113,6 +139,8 @@ const InstructorDashboard = () => {
                 duration: '',
                 level: 'Beginner'
             });
+            setThumbnailFile(null);
+            setFeaturedImageFile(null);
             
             // Refresh courses list
             const userData = JSON.parse(localStorage.getItem("user"));
@@ -128,17 +156,41 @@ const InstructorDashboard = () => {
                 text: `Error creating course: ${errorMessage}`,
                 confirmButtonColor: '#e74c3c'
             });
+        } finally {
+            setUploading(false);
         }
     };
 
     const handleUpdateCourse = async (e) => {
         e.preventDefault();
+        setUploading(true);
+        
         try {
             const token = localStorage.getItem('token');
-            await axios.put(
+            const formDataToSend = new FormData();
+            
+            // Add text fields
+            Object.keys(formData).forEach(key => {
+                formDataToSend.append(key, formData[key]);
+            });
+            
+            // Add files if they exist
+            if (thumbnailFile) {
+                formDataToSend.append('thumbnail', thumbnailFile);
+            }
+            if (featuredImageFile) {
+                formDataToSend.append('featuredImage', featuredImageFile);
+            }
+            
+            const response = await axios.put(
                 `${process.env.REACT_APP_BACKEND_URL}/courses/update-course/${editingCourse._id}`,
-                formData,
-                { headers: { Authorization: `Bearer ${token}` } }
+                formDataToSend,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    } 
+                }
             );
             
             await Swal.fire({
@@ -158,6 +210,8 @@ const InstructorDashboard = () => {
                 duration: '',
                 level: 'Beginner'
             });
+            setThumbnailFile(null);
+            setFeaturedImageFile(null);
             
             // Refresh courses list
             const userData = JSON.parse(localStorage.getItem("user"));
@@ -173,6 +227,158 @@ const InstructorDashboard = () => {
                 text: `Error updating course: ${errorMessage}`,
                 confirmButtonColor: '#e74c3c'
             });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleAddAttachment = async (courseId) => {
+        if (!attachmentFile) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'No File Selected',
+                text: 'Please select a file to upload as attachment.',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+
+        setUploading(true);
+        
+        try {
+            const token = localStorage.getItem('token');
+            const formDataToSend = new FormData();
+            formDataToSend.append('file', attachmentFile);
+            
+            const response = await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
+                formDataToSend,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    } 
+                }
+            );
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Attachment uploaded successfully!',
+                confirmButtonColor: '#27ae60',
+                timer: 1500
+            });
+            
+            setAttachmentFile(null);
+            
+            // Refresh courses list
+            const userData = JSON.parse(localStorage.getItem("user"));
+            const instructorId = userData.id || userData._id;
+            fetchCourses(instructorId);
+        } catch (error) {
+            console.error('Error uploading attachment:', error);
+            // If first attempt fails, try with field name "attachment"
+            if (error.response?.status === 400) {
+                try {
+                    const token = localStorage.getItem('token');
+
+                    console.log('Trying field name: attachment');
+                    const formDataToSend = new FormData();
+                    formDataToSend.append('attachment', attachmentFile);
+                    
+                    const retryResponse = await axios.post(
+                        `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
+                        formDataToSend,
+                        { 
+                            headers: { 
+                                Authorization: `Bearer ${token}`,
+                                'Content-Type': 'multipart/form-data'
+                            } 
+                        }
+                    );
+                    
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Attachment uploaded successfully!',
+                        confirmButtonColor: '#27ae60',
+                        timer: 1500
+                    });
+                    
+                    setAttachmentFile(null);
+                    const userData = JSON.parse(localStorage.getItem("user"));
+                    const instructorId = userData.id || userData._id;
+                    fetchCourses(instructorId);
+                    return;
+                } catch (retryError) {
+                    console.error('Error with field name "attachment":', retryError.response?.data);
+                    error = retryError;
+                }
+            }
+            
+            // Show error message
+            let errorMessage = 'Failed to upload attachment';
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Upload Failed',
+                text: `Error uploading attachment: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDeleteAttachment = async (courseId, attachmentId) => {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'This attachment will be permanently deleted.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+        
+        if (result.isConfirmed) {
+            try {
+                const token = localStorage.getItem('token');
+                await axios.delete(
+                    `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments/${attachmentId}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Attachment deleted successfully!',
+                    confirmButtonColor: '#27ae60',
+                    timer: 1500
+                });
+                
+                // Refresh courses list
+                const userData = JSON.parse(localStorage.getItem("user"));
+                const instructorId = userData.id || userData._id;
+                fetchCourses(instructorId);
+            } catch (error) {
+                console.error('Error deleting attachment:', error);
+                const errorMessage = error.response?.data?.message || error.message;
+                
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Deletion Failed',
+                    text: `Error deleting attachment: ${errorMessage}`,
+                    confirmButtonColor: '#e74c3c'
+                });
+            }
         }
     };
 
@@ -231,6 +437,8 @@ const InstructorDashboard = () => {
             duration: course.duration,
             level: course.level
         });
+        setThumbnailFile(null);
+        setFeaturedImageFile(null);
     };
 
     const logout = () => {
@@ -328,6 +536,12 @@ const InstructorDashboard = () => {
                                             </div>
                                         </div>
                                         
+                                        {course.thumbnail && (
+                                            <div className="course-thumbnail">
+                                                <img src={course.thumbnail} alt={course.title} />
+                                            </div>
+                                        )}
+                                        
                                         <p className="course-description">{course.description}</p>
                                         
                                         {course.duration && (
@@ -335,6 +549,50 @@ const InstructorDashboard = () => {
                                                 <i className="fas fa-clock"></i> {course.duration}
                                             </div>
                                         )}
+
+                                        {/* Attachments Section */}
+                                        {course.attachments && course.attachments.length > 0 && (
+                                            <div className="attachments-section">
+                                                <h5>Attachments ({course.attachments.length})</h5>
+                                                <div className="attachments-list">
+                                                    {course.attachments.map(attachment => (
+                                                        <div key={attachment._id} className="attachment-item">
+                                                            <div className="attachment-info">
+                                                                <i className="fas fa-file"></i>
+                                                                <span>{attachment.filename}</span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleDeleteAttachment(course._id, attachment._id)}
+                                                                className="attachment-delete-btn"
+                                                                title="Delete attachment"
+                                                            >
+                                                                <i className="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Add Attachment Section */}
+                                        <div className="add-attachment-section">
+                                            <h5>Add New Attachment</h5>
+                                            <div className="attachment-input">
+                                                <input
+                                                    type="file"
+                                                    onChange={(e) => setAttachmentFile(e.target.files[0])}
+                                                    className="file-input"
+                                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                                                />
+                                                <button 
+                                                    onClick={() => handleAddAttachment(course._id)}
+                                                    className="add-attachment-btn"
+                                                    disabled={!attachmentFile || uploading}
+                                                >
+                                                    {uploading ? 'Uploading...' : 'Add Attachment'}
+                                                </button>
+                                            </div>
+                                        </div>
                                         
                                         <div className="course-actions">
                                             <button 
@@ -484,6 +742,32 @@ const InstructorDashboard = () => {
                                     <option value="Advanced">Advanced</option>
                                 </select>
                             </div>
+                            
+                            {/* File Upload Sections */}
+                            <div className="form-group">
+                                <label>Thumbnail Image (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setThumbnailFile(e.target.files[0])}
+                                    accept="image/*"
+                                />
+                                <div className="input-help">
+                                    Recommended: 800x600px, JPG/PNG format
+                                </div>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Featured Image (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setFeaturedImageFile(e.target.files[0])}
+                                    accept="image/*"
+                                />
+                                <div className="input-help">
+                                    Optional larger image for course display
+                                </div>
+                            </div>
+                            
                             <div className="modal-actions">
                                 <button 
                                     type="button" 
@@ -492,8 +776,8 @@ const InstructorDashboard = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn-primary">
-                                    Create Course
+                                <button type="submit" className="btn-primary" disabled={uploading}>
+                                    {uploading ? 'Creating...' : 'Create Course'}
                                 </button>
                             </div>
                         </form>
@@ -571,6 +855,32 @@ const InstructorDashboard = () => {
                                     <option value="Advanced">Advanced</option>
                                 </select>
                             </div>
+                            
+                            {/* File Upload Sections for Edit */}
+                            <div className="form-group">
+                                <label>Update Thumbnail Image (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setThumbnailFile(e.target.files[0])}
+                                    accept="image/*"
+                                />
+                                <div className="input-help">
+                                    Leave empty to keep current thumbnail
+                                </div>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Update Featured Image (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setFeaturedImageFile(e.target.files[0])}
+                                    accept="image/*"
+                                />
+                                <div className="input-help">
+                                    Leave empty to keep current featured image
+                                </div>
+                            </div>
+                            
                             <div className="modal-actions">
                                 <button 
                                     type="button" 
@@ -579,8 +889,8 @@ const InstructorDashboard = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn-primary">
-                                    Update Course
+                                <button type="submit" className="btn-primary" disabled={uploading}>
+                                    {uploading ? 'Updating...' : 'Update Course'}
                                 </button>
                             </div>
                         </form>

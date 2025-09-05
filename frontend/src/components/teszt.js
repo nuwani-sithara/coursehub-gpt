@@ -1,87 +1,108 @@
-import React, { useState } from 'react';
-import Swal from 'sweetalert2';
-import '../stylesheets/AIRecommendations.css';
+const handleAddAttachment = async (courseId) => {
+    if (!attachmentFile) {
+        await Swal.fire({
+            icon: 'warning',
+            title: 'No File Selected',
+            text: 'Please select a file to upload as attachment.',
+            confirmButtonColor: '#f39c12'
+        });
+        return;
+    }
 
-const AIRecommendations = ({ 
-    aiPrompt, 
-    setAiPrompt, 
-    aiRecommendations, 
-    getAiRecommendations, 
-    enrollInCourse 
-}) => {
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleGetRecommendations = async () => {
-        setIsLoading(true);
-        await getAiRecommendations();
-        setIsLoading(false);
-    };
-
-    return (
-        <div className="ai-recommendations-section">
-            <div className="ai-hero">
-                <h3>AI Course Recommendations</h3>
-                <p>Tell us what you want to learn, and our AI will recommend the perfect courses for you</p>
-            </div>
-            
-            <div className="ai-prompt-section">
-                <div className="prompt-input-container">
-                    <input
-                        type="text"
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="e.g., I want to be a software engineer, what courses should I follow?"
-                        className="prompt-input"
-                        disabled={isLoading}
-                    />
-                    <button 
-                        onClick={handleGetRecommendations}
-                        className="get-recommendations-btn"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <>
-                                <div className="loading-spinner-small"></div>
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <i className="fas fa-robot"></i> Get Recommendations
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {isLoading ? (
-                <div className="recommendations-loading">
-                    <div className="loading-spinner"></div>
-                    <p>AI is analyzing your request and finding the best courses for you...</p>
-                </div>
-            ) : aiRecommendations.length > 0 ? (
-                <div className="recommendations-results">
-                    <h4>Recommended Courses</h4>
-                    <div className="recommendations-grid">
-                        {aiRecommendations.map(rec => (
-                            <div key={rec.courseId} className="recommendation-card">
-                                <div className="recommendation-header">
-                                    <h5>{rec.course.title}</h5>
-                                    <p className="reason">{rec.reason}</p>
-                                </div>
-                                <p className="course-description">{rec.course.description}</p>
-                                <button 
-                                    onClick={() => enrollInCourse(rec.courseId)}
-                                    className="enroll-btn"
-                                >
-                                    <i className="fas fa-plus"></i> Enroll Now
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
-        </div>
-    );
+    setUploading(true);
+    
+    try {
+        const token = localStorage.getItem('token');
+        const formDataToSend = new FormData();
+        
+        // Try both field names to see which one works
+        formDataToSend.append('file', attachmentFile); // Try this first
+        // formDataToSend.append('attachment', attachmentFile); // If above fails, try this
+        
+        console.log('Trying field name: file');
+        
+        const response = await axios.post(
+            `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
+            formDataToSend,
+            { 
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                } 
+            }
+        );
+        
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'Attachment uploaded successfully!',
+            confirmButtonColor: '#27ae60',
+            timer: 1500
+        });
+        
+        setAttachmentFile(null);
+        
+        // Refresh courses list
+        const userData = JSON.parse(localStorage.getItem("user"));
+        const instructorId = userData.id || userData._id;
+        fetchCourses(instructorId);
+    } catch (error) {
+        console.error('Error with field name "file":', error.response?.data);
+        
+        // If first attempt fails, try with field name "attachment"
+        if (error.response?.status === 400) {
+            try {
+                console.log('Trying field name: attachment');
+                const formDataToSend = new FormData();
+                formDataToSend.append('attachment', attachmentFile);
+                
+                const retryResponse = await axios.post(
+                    `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
+                    formDataToSend,
+                    { 
+                        headers: { 
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        } 
+                    }
+                );
+                
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Attachment uploaded successfully!',
+                    confirmButtonColor: '#27ae60',
+                    timer: 1500
+                });
+                
+                setAttachmentFile(null);
+                const userData = JSON.parse(localStorage.getItem("user"));
+                const instructorId = userData.id || userData._id;
+                fetchCourses(instructorId);
+                return;
+            } catch (retryError) {
+                console.error('Error with field name "attachment":', retryError.response?.data);
+                error = retryError;
+            }
+        }
+        
+        // Show error message
+        let errorMessage = 'Failed to upload attachment';
+        if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        } else if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        await Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: errorMessage,
+            confirmButtonColor: '#e74c3c'
+        });
+    } finally {
+        setUploading(false);
+    }
 };
-
-export default AIRecommendations;

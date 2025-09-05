@@ -506,6 +506,145 @@
     margin-bottom: 20px;
 }
 
+/* File Upload Styles */
+.file-input {
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    width: 100%;
+}
+
+/* Thumbnail Styles */
+.course-thumbnail {
+    margin-bottom: 15px;
+}
+
+.course-thumbnail img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+/* Attachments Styles */
+.attachments-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e1e8ed;
+}
+
+.attachments-section h5 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.attachment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e1e8ed;
+}
+
+.attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.attachment-info i {
+    color: #3498db;
+}
+
+.attachment-delete-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.attachment-delete-btn:hover {
+    background: #c0392b;
+}
+
+/* Add Attachment Section */
+.add-attachment-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #bdc3c7;
+}
+
+.add-attachment-section h5 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.attachment-input {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.add-attachment-btn {
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.add-attachment-btn:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.add-attachment-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* Form Help Text */
+.input-help {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .attachment-input {
+        flex-direction: column;
+    }
+    
+    .add-attachment-btn {
+        width: 100%;
+    }
+    
+    .course-thumbnail img {
+        height: 150px;
+    }
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

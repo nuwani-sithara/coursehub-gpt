@@ -176,6 +176,25 @@ const CourseDetail = () => {
         }
     };
 
+    const downloadFile = (url, filename) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const getFileIcon = (fileType) => {
+        if (fileType.includes('pdf')) return 'fas fa-file-pdf';
+        if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word';
+        if (fileType.includes('powerpoint') || fileType.includes('presentation')) return 'fas fa-file-powerpoint';
+        if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fas fa-file-excel';
+        if (fileType.includes('zip') || fileType.includes('compressed')) return 'fas fa-file-archive';
+        if (fileType.includes('text') || fileType.includes('plain')) return 'fas fa-file-alt';
+        return 'fas fa-file';
+    };
+
     const goBack = () => {
         navigate('/student-dashboard');
     };
@@ -218,6 +237,17 @@ const CourseDetail = () => {
                     <div className="course-content">
                         <div className="course-sidebar">
                             <div className="course-info-card">
+                                {/* Course Thumbnail */}
+                                {course.thumbnail && (
+                                    <div className="course-thumbnail-preview">
+                                        <img 
+                                            src={course.thumbnail} 
+                                            alt={course.title}
+                                            className="thumbnail-image"
+                                        />
+                                    </div>
+                                )}
+                                
                                 <div className="course-meta">
                                     <span className={`course-badge course-level-${course.level?.toLowerCase() || 'beginner'}`}>
                                         {course.level || 'Beginner'}
@@ -308,6 +338,17 @@ const CourseDetail = () => {
                         </div>
 
                         <div className="course-material">
+                            {/* Featured Image */}
+                            {course.featuredImage && (
+                                <div className="featured-image-section">
+                                    <img 
+                                        src={course.featuredImage} 
+                                        alt={course.title}
+                                        className="featured-image"
+                                    />
+                                </div>
+                            )}
+                            
                             <div className="material-header">
                                 <h2>
                                     <i className="fas fa-book"></i> Course Content
@@ -330,14 +371,43 @@ const CourseDetail = () => {
                                 </div>
                             </div>
 
-                            <div className="content-actions">
+                            {/* Attachments Section */}
+                            {course.attachments && course.attachments.length > 0 && (
+                                <div className="content-section">
+                                    <h3>
+                                        <i className="fas fa-paperclip"></i> Course Attachments
+                                    </h3>
+                                    <div className="attachments-list">
+                                        {course.attachments.map((attachment, index) => (
+                                            <div key={attachment._id || index} className="attachment-item">
+                                                <div className="attachment-info">
+                                                    <i className={getFileIcon(attachment.fileType || '')}></i>
+                                                    <div className="attachment-details">
+                                                        <span className="attachment-name">{attachment.filename || attachment.originalName}</span>
+                                                        <span className="attachment-type">{attachment.fileType}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => downloadFile(attachment.url, attachment.filename || attachment.originalName)}
+                                                    className="download-attachment-btn"
+                                                    title="Download attachment"
+                                                >
+                                                    <i className="fas fa-download"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* <div className="content-actions">
                                 <button className="download-btn">
-                                    <i className="fas fa-download"></i> Download Materials
+                                    <i className="fas fa-download"></i> Download All Materials
                                 </button>
                                 <button className="share-btn">
                                     <i className="fas fa-share"></i> Share Course
                                 </button>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
