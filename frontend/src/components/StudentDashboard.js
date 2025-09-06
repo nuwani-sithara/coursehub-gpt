@@ -5,6 +5,7 @@ import StudentNavbar from './StudentNavbar';
 import AvailableCourses from './AvailableCourses';
 import MyCourses from './MyCourses';
 import AIRecommendations from './AIRecommendations';
+import PersonalizedRecommendations from './PersonalizedRecommendations'; // New component
 import '../stylesheets/StudentDashboard.css';
 import Footer from './Footer';
 
@@ -16,6 +17,7 @@ const StudentDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [aiPrompt, setAiPrompt] = useState('');
     const [aiRecommendations, setAiRecommendations] = useState([]);
+    const [personalizedRecommendations, setPersonalizedRecommendations] = useState([]); // New state
 
     useEffect(() => {
         fetchUserData();
@@ -63,6 +65,42 @@ const StudentDashboard = () => {
                 text: 'Failed to fetch your enrolled courses. Please try again later.',
                 confirmButtonColor: '#e74c3c'
             });
+        }
+    };
+
+    const getPersonalizedRecommendations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/ai-recommendations/recommend/personalized`,
+                { maxCourses: 5 },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setPersonalizedRecommendations(response.data.recommendations || []);
+            
+            if (response.data.recommendations.length === 0) {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'No Personalized Recommendations',
+                    text: 'We need more information about your learning preferences to provide personalized recommendations.',
+                    confirmButtonColor: '#3498db'
+                });
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.error('Error getting personalized recommendations:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Personalized Recommendations Failed',
+                text: `Error getting personalized recommendations: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
+            
+            throw error;
         }
     };
 
@@ -126,7 +164,7 @@ const StudentDashboard = () => {
                 });
             }
             
-            return response.data; // Return the response data
+            return response.data;
         } catch (error) {
             console.error('Error getting AI recommendations:', error);
             const errorMessage = error.response?.data?.message || error.message;
@@ -138,7 +176,7 @@ const StudentDashboard = () => {
                 confirmButtonColor: '#e74c3c'
             });
             
-            throw error; // Re-throw the error
+            throw error;
         }
     };
 
@@ -176,10 +214,16 @@ const StudentDashboard = () => {
                             <i className="fas fa-user-graduate"></i> My Courses
                         </button>
                         <button 
+                            className={activeTab === 'personalized' ? 'active' : ''} 
+                            onClick={() => setActiveTab('personalized')}
+                        >
+                            <i className="fas fa-magic"></i> For You
+                        </button>
+                        <button 
                             className={activeTab === 'ai' ? 'active' : ''} 
                             onClick={() => setActiveTab('ai')}
                         >
-                            <i className="fas fa-robot"></i> AI Recommendations
+                            <i className="fas fa-robot"></i> AI Search
                         </button>
                     </div>
 
@@ -196,6 +240,15 @@ const StudentDashboard = () => {
                             <MyCourses 
                                 enrolledCourses={enrolledCourses} 
                                 setActiveTab={setActiveTab} 
+                            />
+                        )}
+
+                        {activeTab === 'personalized' && (
+                            <PersonalizedRecommendations
+                                personalizedRecommendations={personalizedRecommendations}
+                                getPersonalizedRecommendations={getPersonalizedRecommendations}
+                                enrollInCourse={enrollInCourse}
+                                enrolledCourses={enrolledCourses}
                             />
                         )}
 

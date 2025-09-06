@@ -1,108 +1,272 @@
-const handleAddAttachment = async (courseId) => {
-    if (!attachmentFile) {
-        await Swal.fire({
-            icon: 'warning',
-            title: 'No File Selected',
-            text: 'Please select a file to upload as attachment.',
-            confirmButtonColor: '#f39c12'
-        });
-        return;
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import StudentNavbar from './StudentNavbar';
+import AvailableCourses from './AvailableCourses';
+import MyCourses from './MyCourses';
+import AIRecommendations from './AIRecommendations';
+import PersonalizedRecommendations from './PersonalizedRecommendations'; // New component
+import '../stylesheets/StudentDashboard.css';
+import Footer from './Footer';
+
+const StudentDashboard = () => {
+    const [user, setUser] = useState(null);
+    const [activeTab, setActiveTab] = useState('available');
+    const [courses, setCourses] = useState([]);
+    const [enrolledCourses, setEnrolledCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiRecommendations, setAiRecommendations] = useState([]);
+    const [personalizedRecommendations, setPersonalizedRecommendations] = useState([]); // New state
+
+    useEffect(() => {
+        fetchUserData();
+        fetchCourses();
+        fetchEnrolledCourses();
+    }, []);
+
+    const fetchUserData = () => {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        setUser(userData);
+    };
+
+    const fetchCourses = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/courses/all-courses`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setCourses(response.data);
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to fetch courses. Please try again later.',
+                confirmButtonColor: '#e74c3c'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEnrolledCourses = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/enrollments/my-courses`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setEnrolledCourses(response.data);
+        } catch (error) {
+            console.error('Error fetching enrolled courses:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to fetch your enrolled courses. Please try again later.',
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+    };
+
+    const getPersonalizedRecommendations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/ai-recommendations/recommend/personalized`,
+                { maxCourses: 5 },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setPersonalizedRecommendations(response.data.recommendations || []);
+            
+            if (response.data.recommendations.length === 0) {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'No Personalized Recommendations',
+                    text: 'We need more information about your learning preferences to provide personalized recommendations.',
+                    confirmButtonColor: '#3498db'
+                });
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.error('Error getting personalized recommendations:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Personalized Recommendations Failed',
+                text: `Error getting personalized recommendations: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
+            
+            throw error;
+        }
+    };
+
+    const enrollInCourse = async (courseId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${process.env.REACT_APP_BACKEND_URL}/enrollments/enroll-course/${courseId}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Enrolled in course successfully!',
+                confirmButtonColor: '#27ae60',
+                timer: 2000
+            });
+            
+            fetchEnrolledCourses();
+        } catch (error) {
+            console.error('Error enrolling in course:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Enrollment Failed',
+                text: `Error enrolling in course: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
+        }
+    };
+
+    const getAiRecommendations = async () => {
+        if (!aiPrompt.trim()) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Prompt Required',
+                text: 'Please enter a prompt to get recommendations.',
+                confirmButtonColor: '#f39c12'
+            });
+            return Promise.reject('Prompt required');
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/ai-recommendations/recommend`, {
+                prompt: aiPrompt,
+                maxCourses: 5
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setAiRecommendations(response.data.recommendations || []);
+            
+            if (response.data.recommendations.length === 0) {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'No Recommendations',
+                    text: 'No courses found matching your criteria. Try a different prompt.',
+                    confirmButtonColor: '#3498db'
+                });
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.error('Error getting AI recommendations:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Recommendation Failed',
+                text: `Error getting recommendations: ${errorMessage}`,
+                confirmButtonColor: '#e74c3c'
+            });
+            
+            throw error;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="student-dashboard-loading">
+                <div className="loading-spinner"></div>
+                <p>Loading your dashboard...</p>
+            </div>
+        );
     }
 
-    setUploading(true);
-    
-    try {
-        const token = localStorage.getItem('token');
-        const formDataToSend = new FormData();
-        
-        // Try both field names to see which one works
-        formDataToSend.append('file', attachmentFile); // Try this first
-        // formDataToSend.append('attachment', attachmentFile); // If above fails, try this
-        
-        console.log('Trying field name: file');
-        
-        const response = await axios.post(
-            `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
-            formDataToSend,
-            { 
-                headers: { 
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                } 
-            }
-        );
-        
-        await Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: 'Attachment uploaded successfully!',
-            confirmButtonColor: '#27ae60',
-            timer: 1500
-        });
-        
-        setAttachmentFile(null);
-        
-        // Refresh courses list
-        const userData = JSON.parse(localStorage.getItem("user"));
-        const instructorId = userData.id || userData._id;
-        fetchCourses(instructorId);
-    } catch (error) {
-        console.error('Error with field name "file":', error.response?.data);
-        
-        // If first attempt fails, try with field name "attachment"
-        if (error.response?.status === 400) {
-            try {
-                console.log('Trying field name: attachment');
-                const formDataToSend = new FormData();
-                formDataToSend.append('attachment', attachmentFile);
-                
-                const retryResponse = await axios.post(
-                    `${process.env.REACT_APP_BACKEND_URL}/courses/${courseId}/attachments`,
-                    formDataToSend,
-                    { 
-                        headers: { 
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        } 
-                    }
-                );
-                
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: 'Attachment uploaded successfully!',
-                    confirmButtonColor: '#27ae60',
-                    timer: 1500
-                });
-                
-                setAttachmentFile(null);
-                const userData = JSON.parse(localStorage.getItem("user"));
-                const instructorId = userData.id || userData._id;
-                fetchCourses(instructorId);
-                return;
-            } catch (retryError) {
-                console.error('Error with field name "attachment":', retryError.response?.data);
-                error = retryError;
-            }
-        }
-        
-        // Show error message
-        let errorMessage = 'Failed to upload attachment';
-        if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-        } else if (error.response?.data?.error) {
-            errorMessage = error.response.data.error;
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        await Swal.fire({
-            icon: 'error',
-            title: 'Upload Failed',
-            text: errorMessage,
-            confirmButtonColor: '#e74c3c'
-        });
-    } finally {
-        setUploading(false);
-    }
+    return (
+        <div className="student-dashboard">
+            <StudentNavbar user={user} />
+            
+            <main className="student-main">
+                <div className="container">
+                    <div className="student-hero">
+                        <h2>Your Learning Journey</h2>
+                        <p>Discover new courses, track your progress, and achieve your learning goals</p>
+                    </div>
+
+                    <div className="dashboard-tabs">
+                        <button 
+                            className={activeTab === 'available' ? 'active' : ''} 
+                            onClick={() => setActiveTab('available')}
+                        >
+                            <i className="fas fa-book"></i> Available Courses
+                        </button>
+                        <button 
+                            className={activeTab === 'enrolled' ? 'active' : ''} 
+                            onClick={() => setActiveTab('enrolled')}
+                        >
+                            <i className="fas fa-user-graduate"></i> My Courses
+                        </button>
+                        <button 
+                            className={activeTab === 'personalized' ? 'active' : ''} 
+                            onClick={() => setActiveTab('personalized')}
+                        >
+                            <i className="fas fa-magic"></i> For You
+                        </button>
+                        <button 
+                            className={activeTab === 'ai' ? 'active' : ''} 
+                            onClick={() => setActiveTab('ai')}
+                        >
+                            <i className="fas fa-robot"></i> AI Search
+                        </button>
+                    </div>
+
+                    <div className="dashboard-content">
+                        {activeTab === 'available' && (
+                            <AvailableCourses 
+                                courses={courses} 
+                                enrolledCourses={enrolledCourses} 
+                                enrollInCourse={enrollInCourse} 
+                            />
+                        )}
+
+                        {activeTab === 'enrolled' && (
+                            <MyCourses 
+                                enrolledCourses={enrolledCourses} 
+                                setActiveTab={setActiveTab} 
+                            />
+                        )}
+
+                        {activeTab === 'personalized' && (
+                            <PersonalizedRecommendations
+                                personalizedRecommendations={personalizedRecommendations}
+                                getPersonalizedRecommendations={getPersonalizedRecommendations}
+                                enrollInCourse={enrollInCourse}
+                                enrolledCourses={enrolledCourses}
+                            />
+                        )}
+
+                        {activeTab === 'ai' && (
+                            <AIRecommendations 
+                                aiPrompt={aiPrompt}
+                                setAiPrompt={setAiPrompt}
+                                aiRecommendations={aiRecommendations}
+                                getAiRecommendations={getAiRecommendations}
+                                enrollInCourse={enrollInCourse}
+                            />
+                        )}
+                    </div>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
 };
+
+export default StudentDashboard;

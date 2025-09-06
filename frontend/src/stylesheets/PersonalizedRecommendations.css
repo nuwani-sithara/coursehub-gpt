@@ -1,0 +1,188 @@
+.personalized-recommendations-section {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.personalized-hero {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.personalized-hero h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.personalized-hero p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.personalized-actions {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.refresh-recommendations-btn {
+    padding: 12px 24px;
+    background: #9b59b6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.refresh-recommendations-btn:hover:not(:disabled) {
+    background: #8e44ad;
+    transform: translateY(-2px);
+}
+
+.refresh-recommendations-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.personalized-badge {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.personalized-card {
+    border-left: 4px solid #9b59b6;
+    position: relative;
+    overflow: hidden;
+}
+
+.personalized-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #9b59b6, #8e44ad);
+}
+
+.recommendations-subtitle {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    margin-bottom: 25px;
+    font-size: 1rem;
+}
+
+.no-recommendations {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px dashed #e1e8ed;
+}
+
+.no-recommendations i {
+    font-size: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 20px;
+}
+
+.no-recommendations h4 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.no-recommendations p {
+    color: #7f8c8d;
+    margin-bottom: 25px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.try-again-btn {
+    padding: 12px 24px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.try-again-btn:hover {
+    background: #2980b9;
+}
+
+/* Loading states (reuse from existing CSS) */
+.recommendations-loading {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px dashed #e1e8ed;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #e1e8ed;
+    border-top: 5px solid #9b59b6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.loading-spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.recommendations-loading p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .personalized-hero h3 {
+        font-size: 1.5rem;
+    }
+    
+    .personalized-hero p {
+        font-size: 1rem;
+    }
+    
+    .refresh-recommendations-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
