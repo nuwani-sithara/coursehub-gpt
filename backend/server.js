@@ -7,20 +7,22 @@ const app = express();
 require('dotenv').config();
 require('./config/cloudinary');
 
+const { initRequestCount } = require('./controllers/requestLogController'); 
+
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true
-});
+mongoose.connect(MONGO_URI);
 
 const connection = mongoose.connection;
-connection.once('open', () => {
+connection.once('open', async () => {
   console.log('MongoDB connected');
+
+  // Load request counts from DB at startup
+  await initRequestCount();
 });
 
 const userRoutes = require('./routes/userRoute.js');
