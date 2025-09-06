@@ -40,6 +40,7 @@ app.use('/enrollments', enrollmentRoutes);
 const recommendationRoutes = require('./routes/recommendationRoute.js');
 app.use('/ai-recommendations', recommendationRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
