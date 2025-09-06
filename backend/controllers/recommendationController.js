@@ -4,6 +4,8 @@ const { CohereClient } = require('cohere-ai');
 const http = require('http');
 const Course = require('../models/course');
 const Enrollment = require('../models/enrollment');
+const { updateRequestCount } = require('./requestLogController');
+const RequestLog = require("../models/requestLog");
 
 // Initialize AI clients with better error handling
 let openai, hf, cohere, ollama, detectedOllamaModel;
@@ -199,16 +201,17 @@ const recommendationProviders = [
 
 // Get API status
 exports.getAIStatus = async (req, res) => {
-    try {
-        res.status(200).json({
-            apiStatus,
-            requestCount,
-            maxRequests: MAX_REQUESTS,
-            remainingRequests: MAX_REQUESTS - requestCount.total
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching API status', error: error.message });
-    }
+  try {
+    const log = await RequestLog.findOne();
+    res.status(200).json({
+      apiStatus,
+      requestCount: log || requestCount,
+      maxRequests: MAX_REQUESTS,
+      remainingRequests: MAX_REQUESTS - (log?.total || requestCount.total)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching API status", error: error.message });
+  }
 };
 
 // Get personalized course recommendations with triple AI providers
@@ -267,7 +270,13 @@ exports.getCourseRecommendations = async (req, res) => {
                         recommendations = result;
                         aiProvider = provider.name;
                         providerUsed = provider.counter;
-                        requestCount[provider.counter]++;
+
+                        // requestCount[provider.counter]++;
+                        // requestCount.total++;
+
+                        await updateRequestCount(provider.counter);
+
+
                         console.log(`Successfully got recommendations from ${provider.name}`);
                         break; // Exit loop on success
                     }
@@ -288,6 +297,9 @@ exports.getCourseRecommendations = async (req, res) => {
 
         // Enrich recommendations with course data
         const enrichedRecommendations = await enrichRecommendations(recommendations, allCourses);
+
+        // Log the current request counts to the console
+        console.log('Current AI Request Counts:', requestCount);
 
         res.status(200).json({
             recommendations: enrichedRecommendations,
@@ -690,6 +702,7 @@ exports.getPersonalizedRecommendations = async (req, res) => {
 
     let recommendations;
     let aiProvider = '';
+    let providerUsed = '';
     const enrolledCourseIds = new Set(userEnrollments.map(e => e.course._id.toString()));
     const prompt = `User has enrolled in these courses: ${JSON.stringify(userContext.enrolledCourses)}. Suggest complementary courses.`;
 
@@ -702,6 +715,15 @@ exports.getPersonalizedRecommendations = async (req, res) => {
                 if (result && result.length > 0) {
                     recommendations = result;
                     aiProvider = provider.name;
+                    providerUsed = provider.counter;
+
+                    // ✅ Increment counters here
+                    // requestCount[provider.counter]++;
+                    // requestCount.total++;
+
+                    await updateRequestCount(provider.counter);
+
+
                     console.log(`Successfully got personalized recommendations from ${provider.name}`);
                     break; // Exit loop on success
                 }
@@ -722,18 +744,32 @@ exports.getPersonalizedRecommendations = async (req, res) => {
                 courseId: course._id.toString(),
                 reason: `Similar to your interests in ${course.category}`
             }));
+
         aiProvider = 'Category Matching';
+
+        // ✅ Increment keyword fallback counter
+        requestCount.keyword++;
+        requestCount.total++;
     }
 
     // Enrich with course data
     const enrichedRecommendations = await enrichRecommendations(recommendations, allCourses);
+
+    // Log the current request counts to the console
+    console.log('Current AI Request Counts:', requestCount);
 
     res.status(200).json({
       recommendations: enrichedRecommendations,
       summary: `Recommended ${enrichedRecommendations.length} courses based on your learning history`,
       basedOn: `your ${userEnrollments.length} enrolled courses`,
       totalAvailable: allCourses.length,
-      aiProvider: aiProvider
+      aiProvider: aiProvider,
+      providerUsed: providerUsed,
+      requestStats: {
+        current: requestCount.total,
+        remaining: MAX_REQUESTS - requestCount.total,
+        limit: MAX_REQUESTS
+      }
     });
 
   } catch (error) {
@@ -741,6 +777,7 @@ exports.getPersonalizedRecommendations = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate personalized recommendations' });
   }
 };
+
 
 // Reset request counter
 exports.resetRequestCount = async (req, res) => {
