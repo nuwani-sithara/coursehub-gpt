@@ -133,6 +133,20 @@ Backend API (Node + Express + AWS EC2)
   lastAccessed: Date
 }
 ```
+### requestLog Schema to track AI requests
+
+```js
+{
+  _id: ObjectId,
+  openai: Number,
+  ollama: Number,
+  huggingface: Number,
+  cohere: Number,
+  keyword: String,
+  total: Number,
+  updatedAt: Date
+}
+```
 
 ---
 
