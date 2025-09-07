@@ -9,10 +9,7 @@
 A full-stack **MERN application** for online learning with **ChatGPT integration**.
 The system allows **students** to enroll in courses and get AI-driven recommendations, while **instructors** can create and manage courses.
 
-🔗 **Live Links**
-
-* **Frontend (Heroku):** [https://coursehub-app-153525cbd887.herokuapp.com/](https://coursehub-app-153525cbd887.herokuapp.com/)
-* **Backend (AWS EC2):** [https://51.21.171.105](https://51.21.171.105)
+🔗 **Live Link:** [http://13.60.241.237:3000](http://13.60.241.237:3000)
 
 ---
 
@@ -44,8 +41,8 @@ The system allows **students** to enroll in courses and get AI-driven recommenda
 
 ## 🛠️ Tech Stack
 
-* **Frontend**: React.js (Heroku)
-* **Backend**: Node.js, Express.js (AWS EC2)
+* **Frontend**: React.js
+* **Backend**: Node.js, Express.js
 * **Database**: MongoDB Atlas
 * **File Storage**: Cloudinary
 * **AI Integration**: OpenAI GPT API
@@ -54,12 +51,12 @@ The system allows **students** to enroll in courses and get AI-driven recommenda
 
 ## ⚙️ System Architecture
 
-![System Architecture](./docs/system-architecture.jpg)
+![System Architecture](./docs/systemArchi.jpg)
 
 **Flow:**
 
 ```
-Frontend (React + Heroku)
+Frontend (React + AWS EC2)
         |
         v
 Backend API (Node + Express + AWS EC2)
@@ -213,8 +210,6 @@ Backend API (Node + Express + AWS EC2)
 
 ---
 
----
-
 ## ⚡ Setup Instructions
 
 ### 1️⃣ Clone the Repository
@@ -224,7 +219,9 @@ git clone https://github.com/nuwani-sithara/coursehub-gpt.git
 cd coursehub-gpt
 ```
 
-### 2️⃣ Backend Setup (AWS EC2)
+---
+
+### 2️⃣ Backend Setup (Separate EC2 Instance or Folder)
 
 ```bash
 cd backend
@@ -243,43 +240,60 @@ CLOUDINARY_API_SECRET=your_cloudinary_secret
 OPENAI_API_KEY=your_openai_key
 ```
 
-Run with **PM2** (recommended):
+Run backend with **PM2** (recommended):
 
 ```bash
 pm2 start server.js
 ```
 
-Make sure **Nginx reverse proxy** is configured for domain/EC2 IP.
+The backend will now be available at:
+
+```
+http://<your-ec2-ip>:5000
+```
 
 ---
 
-### 3️⃣ Frontend Setup (Heroku)
+### 3️⃣ Frontend Setup (Separate EC2 Instance or Folder)
 
 ```bash
 cd frontend
 npm install
+npm run build
 ```
 
-Create `.env`:
-
-```env
-REACT_APP_API_URL=http://your-ec2-ip:5000
-```
-
-Build & deploy:
+Install **serve** globally to serve the React production build:
 
 ```bash
-npm run build
-git push heroku main
+npm install -g serve
 ```
+
+Run the frontend on port `3000`:
+
+```bash
+serve -s build -l 3000
+```
+
+The frontend will now be available at:
+
+```
+http://<your-ec2-ip>:3000
+```
+
+---
+
+✅ With this architecture:
+
+* Backend lives on **EC2:5000** [http://13.62.103.64:5000](http://13.62.103.64:5000)
+* Frontend lives on **EC2:3000** [http://13.60.241.237:3000](http://13.60.241.237:3000)
+* Both can also be hosted on separate EC2 instances if needed (your setup still works fine either way).
 
 ---
 
 ## 📖 Deliverables
 
 * ✅ GitHub Repository
-* ✅ Backend deployed on **AWS EC2**
-* ✅ Frontend deployed on **Heroku**
+* ✅ Backend & Frontend deployed on **AWS EC2**
 * ✅ System Architecture Diagram
 * ✅ ER Diagram
 * ✅ Documentation (this README)
