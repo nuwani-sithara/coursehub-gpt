@@ -168,7 +168,7 @@ function parseAIResponse(responseText, providerName) {
     }
     // Clean the response - remove markdown code blocks and trim whitespace
     const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/) || cleanedText.match(/\[[\s\S]*\]/);
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/) || cleanedText.match(/\{[\[\s\S]*\]\}/);
     if (!jsonMatch) {
         throw new Error(`No JSON found in ${providerName} response`);
     }
@@ -303,7 +303,7 @@ exports.getCourseRecommendations = async (req, res) => {
 
         res.status(200).json({
             recommendations: enrichedRecommendations,
-            summary: `Found ${enrichedRecommendations.length} courses matching your interest in "${prompt}"`,
+            summary: `Found ${enrichedRecommendations.length} courses matching your interest in "${prompt}"`, 
             totalRecommended: enrichedRecommendations.length,
             totalAvailable: allCourses.length,
             aiProvider: aiProvider,
@@ -660,9 +660,10 @@ exports.getPersonalizedRecommendations = async (req, res) => {
     const userId = req.user.id;
     const { maxCourses = 5 } = req.body;
 
-    // Get user's enrolled courses
-    const userEnrollments = await Enrollment.find({ student: userId })
-      .populate('course', 'category level');
+    // Get user's enrolled courses and filter out any with missing course data
+    const userEnrollments = (await Enrollment.find({ student: userId })
+      .populate('course', 'category level'))
+      .filter(enrollment => enrollment.course); // Filter out null courses
     
     // Get all available courses
     let allCourses = await Course.find({ isPublished: true })
@@ -915,7 +916,7 @@ Return only valid JSON without any additional text.
         res.status(200).json({
             success: true,
             recommendations: enrichedRecommendations,
-            summary: `GPT found ${enrichedRecommendations.length} courses matching your interest in "${prompt}"`,
+            summary: `GPT found ${enrichedRecommendations.length} courses matching your interest in "${prompt}"`, 
             prompt: prompt,
             rawResponse: gptResponseRaw,
             totalCoursesAvailable: allCourses.length,

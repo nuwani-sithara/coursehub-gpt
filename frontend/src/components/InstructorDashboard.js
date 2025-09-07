@@ -521,7 +521,7 @@ const InstructorDashboard = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div className="courses-list">
+                             <div className="courses-list"> {/* Changed from courses-list to courses-grid */}
                                 {courses.map(course => (
                                     <div key={course._id} className="course-card">
                                         <div className="course-card-header">

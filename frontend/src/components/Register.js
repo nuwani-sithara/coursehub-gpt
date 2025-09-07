@@ -70,7 +70,7 @@ const Register = () => {
                 confirmButtonColor: '#27ae60'
             });
             
-            navigate('/');
+            navigate('/login');
         } catch (error) {
             console.error('Registration error:', error);
             
