@@ -312,4 +312,6 @@ http://<your-ec2-ip>:3000
 * ✅ ER Diagram
 * ✅ Documentation (this README)
 
+**Project Deliverables:** [https://drive.google.com/drive/folders/1YpR8sgNNVNMuJaexAMMk45zVw-1rXVhj](https://drive.google.com/drive/folders/1YpR8sgNNVNMuJaexAMMk45zVw-1rXVhj)
+
 ---
